@@ -32,8 +32,8 @@ create table if not exists public.pole_sizes (
 -- ---------- 3) ใบเบิก ----------
 create table if not exists public.withdrawals (
   id            uuid primary key default gen_random_uuid(),
-  site_id       uuid not null references public.sites(id),
-  size_id       uuid not null references public.pole_sizes(id),
+  site_id       uuid references public.sites(id),        -- (เก่า) ใบเบิกใหม่ไม่ใช้ เพราะเบิกได้หลายกอง
+  size_id       uuid references public.pole_sizes(id),   -- (เก่า)
   job_name      text not null,
   wbs           text,
   network       text,
@@ -102,29 +102,20 @@ begin
   end if;
 
   insert into public.withdrawals
-    (site_id, size_id, job_name, wbs, network, responsible, team, before_photos, after_photos)
+    (job_name, wbs, network, responsible, team, before_photos, after_photos)
   values (
-    (p->>'site_id')::uuid,
-    (p->>'size_id')::uuid,
-    p->>'job_name',
-    p->>'wbs',
-    p->>'network',
-    p->>'responsible',
-    p->>'team',
+    p->>'job_name', p->>'wbs', p->>'network', p->>'responsible', p->>'team',
     coalesce(p->'before_photos', '[]'::jsonb),
     coalesce(p->'after_photos',  '[]'::jsonb)
   )
   returning id into v_id;
 
+  -- เสาแต่ละต้นรู้กอง/ขนาดของตัวเองอยู่แล้ว; ต้องยัง available ทุกต้น ไม่งั้น rollback ทั้งใบ
   update public.poles
      set status = 'withdrawn', withdrawal_id = v_id, withdrawn_at = now()
-   where id = any(v_ids)
-     and status = 'available'
-     and site_id = (p->>'site_id')::uuid
-     and size_id = (p->>'size_id')::uuid;
+   where id = any(v_ids) and status = 'available';
 
   get diagnostics v_count = row_count;
-
   if v_count <> array_length(v_ids, 1) then
     raise exception 'POLE_NOT_AVAILABLE';
   end if;

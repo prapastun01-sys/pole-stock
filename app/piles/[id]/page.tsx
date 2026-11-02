@@ -14,7 +14,7 @@ async function allPoles(siteId: string) {
   for (let from = 0; ; from += 1000) {
     const { data, error } = await s
       .from("poles")
-      .select("id,pole_no,tier,pos,status,photo_url,created_at,withdrawn_at,size_id,pole_sizes(name),withdrawals(job_name,responsible)")
+      .select("id,pole_no,tier,pos,status,photo_url,created_at,withdrawn_at,size_id,withdrawal_id,pole_sizes(name),withdrawals(job_name,responsible)")
       .eq("site_id", siteId)
       .order("tier", { ascending: true, nullsFirst: false })
       .order("pos", { ascending: true, nullsFirst: false })
@@ -35,12 +35,16 @@ export default async function Pile({ params }: { params: { id: string } }) {
   let poles: any[] = [];
   try { poles = await allPoles(params.id); } catch (e: any) { return <div className="card text-red-600">{e.message}</div>; }
 
-  const { data: wds } = await s
-    .from("withdrawals")
-    .select("id,created_at,job_name,responsible,pole_sizes(name),poles(pole_no)")
-    .eq("site_id", params.id)
-    .order("created_at", { ascending: false })
-    .limit(100);
+  // ใบเบิกที่แตะกองนี้ (ใบเดียวอาจเบิกหลายกอง) — แสดงเฉพาะเสาของกองนี้
+  const wIds = Array.from(new Set(poles.map((p) => p.withdrawal_id).filter(Boolean))) as string[];
+  const wds: any[] = [];
+  for (let i = 0; i < wIds.length; i += 60) {
+    const { data } = await s
+      .from("withdrawals")
+      .select("id,created_at,job_name,responsible,poles(pole_no,site_id,pole_sizes(name))")
+      .in("id", wIds.slice(i, i + 60));
+    wds.push(...(data || []));
+  }
 
   // จัดกลุ่มตามชั้น: ชั้นบนอยู่บน ชั้น 1 อยู่ล่าง; ไม่ระบุชั้นไว้ล่างสุด
   const byTier = new Map<number, any[]>();
@@ -64,10 +68,13 @@ export default async function Pile({ params }: { params: { id: string } }) {
   }
   const events = [
     ...Array.from(adds.values()).map((a) => ({ ts: a.ts, kind: "add", text: `เพิ่มเสา ${a.n} ต้น (${a.size})` })),
-    ...(wds || []).map((w: any) => ({
-      ts: w.created_at, kind: "out",
-      text: `เบิก ${w.poles.length} ต้น (${w.pole_sizes?.name}) — ${w.job_name} · ${w.responsible} · เลข ${w.poles.map((p: any) => p.pole_no).join(", ")}`,
-    })),
+    ...wds.map((w: any) => {
+      const mine = w.poles.filter((p: any) => p.site_id === params.id);
+      return {
+        ts: w.created_at, kind: "out",
+        text: `เบิก ${mine.length} ต้น — ${w.job_name} · ${w.responsible} · เลข ${mine.map((p: any) => p.pole_no).join(", ")}`,
+      };
+    }),
   ].sort((a, b) => +new Date(b.ts) - +new Date(a.ts));
 
   return (
