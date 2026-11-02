@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
 
 // ค้นหา/ดึงรายการเสา  ?q=เลขเสา&site=&size=&status=available
 export async function GET(req: Request) {

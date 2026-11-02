@@ -1,6 +1,8 @@
 import { db } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
 
 type Row = { site_id: string; site_name: string; size_id: string; size_name: string; sort_order: number; total: number; available: number; withdrawn: number };
 

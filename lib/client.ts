@@ -52,7 +52,7 @@ export async function uploadPhoto(photo: Photo, folder: string[], filename: stri
 }
 
 export async function api(path: string, init?: RequestInit) {
-  const res = await fetch(path, init);
+  const res = await fetch(path, { cache: "no-store", ...init });
   const j = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(j.error || `ผิดพลาด (${res.status})`);
   return j;
