@@ -9,6 +9,8 @@ export default function Sites() {
   const [size, setSize] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [d, setD] = useState({ name: "", pile: "", lat: "", lng: "", note: "" });
 
   const load = () => api("/api/master").then((j) => { setSites(j.sites); setSizes(j.sizes); }).catch((e) => setMsg(e.message));
   useEffect(() => { load(); }, []);
@@ -36,6 +38,20 @@ export default function Sites() {
       setF({ name: "", pile: "", lat: "", lng: "", note: "" });
       setMsg("✅ เพิ่มจุดกองหมอนแล้ว");
       load();
+    } catch (e: any) { setMsg("❌ " + e.message); }
+    setBusy(false);
+  }
+
+  function startEdit(s: any) {
+    setEditId(s.id);
+    setD({ name: s.name || "", pile: s.pile || "", lat: s.lat ?? "", lng: s.lng ?? "", note: s.note || "" } as any);
+    setMsg("");
+  }
+  async function saveEdit() {
+    setBusy(true); setMsg("");
+    try {
+      await api(`/api/sites/${editId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) });
+      setEditId(null); setMsg("✅ แก้ไขแล้ว"); load();
     } catch (e: any) { setMsg("❌ " + e.message); }
     setBusy(false);
   }
@@ -75,12 +91,33 @@ export default function Sites() {
         <h2 className="mb-2 font-semibold">รายการจุดกอง ({sites.length})</h2>
         <ul className="divide-y">
           {sites.map((s) => (
-            <li key={s.id} className="flex items-center justify-between gap-2 py-2">
-              <div>
-                <div className="font-medium">{s.label}</div>
-                <div className="text-xs text-slate-500">{s.lat != null ? `${s.lat}, ${s.lng}` : "ไม่มีพิกัด"}{s.note ? ` · ${s.note}` : ""}</div>
-              </div>
-              {s.lat != null && <a className="btn-ghost !py-1.5 text-sm" target="_blank" href={`https://maps.google.com/?q=${s.lat},${s.lng}`}>🗺 แผนที่</a>}
+            <li key={s.id} className="py-2">
+              {editId === s.id ? (
+                <div className="space-y-2 rounded-xl bg-slate-50 p-3">
+                  <div><label className="label">ชื่อจุด *</label><input className="input" value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} /></div>
+                  <div><label className="label">กอง</label><input className="input" value={d.pile} onChange={(e) => setD({ ...d, pile: e.target.value })} placeholder="เว้นว่างได้" /></div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div><label className="label">Latitude</label><input className="input" inputMode="decimal" value={d.lat} onChange={(e) => setD({ ...d, lat: e.target.value })} /></div>
+                    <div><label className="label">Longitude</label><input className="input" inputMode="decimal" value={d.lng} onChange={(e) => setD({ ...d, lng: e.target.value })} /></div>
+                  </div>
+                  <div><label className="label">หมายเหตุ</label><input className="input" value={d.note} onChange={(e) => setD({ ...d, note: e.target.value })} /></div>
+                  <div className="flex gap-2">
+                    <button type="button" className="btn" disabled={busy} onClick={saveEdit}>บันทึก</button>
+                    <button type="button" className="btn-ghost" onClick={() => setEditId(null)}>ยกเลิก</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <div className="font-medium">{s.label}</div>
+                    <div className="text-xs text-slate-500">{s.lat != null ? `${s.lat}, ${s.lng}` : "ไม่มีพิกัด"}{s.note ? ` · ${s.note}` : ""}</div>
+                  </div>
+                  <div className="flex shrink-0 gap-1.5">
+                    {s.lat != null && <a className="btn-ghost !py-1.5 text-sm" target="_blank" href={`https://maps.google.com/?q=${s.lat},${s.lng}`}>🗺</a>}
+                    <button type="button" className="btn-ghost !py-1.5 text-sm" onClick={() => startEdit(s)}>✏️ แก้ไข</button>
+                  </div>
+                </div>
+              )}
             </li>
           ))}
           {sites.length === 0 && <li className="py-3 text-slate-500">ยังไม่มีข้อมูล</li>}

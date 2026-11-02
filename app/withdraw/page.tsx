@@ -3,7 +3,7 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import { api, stamp, uploadPhoto, Photo } from "@/lib/client";
 import PhotoPicker from "@/components/PhotoPicker";
 
-const REQUIRE_PHOTOS = true; // เปลี่ยนเป็น false ถ้าไม่บังคับแนบรูปก่อน/หลัง
+const REQUIRE_PHOTOS = false; // รูปก่อน/หลังขน ไม่บังคับ (ตั้งเป็น true ถ้าต้องการบังคับแนบ)
 
 type Picked = { id: string; pole_no: string; tier: number | null; site_id: string; size_id: string; site_label: string; size_name: string };
 
