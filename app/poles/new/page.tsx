@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { api, stamp, uploadPhoto, Photo } from "@/lib/client";
 import PhotoPicker from "@/components/PhotoPicker";
+import SizePicker from "@/components/SizePicker";
 
 /**
  * การสร้างเลขเสา: เลขเสา = [ชั้น] + [ลำดับ เติม 0 ให้ครบหลัก]
@@ -78,10 +79,7 @@ export default function NewPoles() {
         </div>
         <div>
           <label className="label">2) ขนาดเสา *</label>
-          <select className="input" value={sizeId} onChange={(e) => setSizeId(e.target.value)}>
-            <option value="">— เลือกขนาด —</option>
-            {sizes.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
+          <SizePicker sizes={sizes} value={sizeId} onChange={setSizeId} onAdded={(z) => setSizes((l) => [...l, z])} />
         </div>
         <PhotoPicker label="3) รูปเสา (บีบเหลือ ≤ 1MB อัตโนมัติ)" photos={photos} onChange={setPhotos} single />
       </div>
