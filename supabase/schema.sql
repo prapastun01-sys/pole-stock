@@ -48,7 +48,9 @@ create table if not exists public.withdrawals (
 create table if not exists public.poles (
   id            uuid primary key default gen_random_uuid(),
   pole_no       text not null unique,                  -- เลขเสา เช่น 4201
-  layer         text,                                  -- ชั้น
+  layer         text,                                  -- (เก่า) ไม่ใช้แล้ว
+  tier          int,                                   -- ชั้น (1 = ล่างสุด)
+  pos           int,                                   -- ลำดับในชั้น นับจากซ้ายไปขวา
   site_id       uuid not null references public.sites(id),
   size_id       uuid not null references public.pole_sizes(id),
   photo_url     text,
@@ -60,6 +62,7 @@ create table if not exists public.poles (
 );
 
 create index if not exists poles_site_size_status_idx on public.poles (site_id, size_id, status);
+create index if not exists poles_site_tier_pos_idx on public.poles (site_id, tier, pos);
 create index if not exists poles_pole_no_idx          on public.poles (pole_no text_pattern_ops);
 create index if not exists poles_withdrawal_idx       on public.poles (withdrawal_id);
 create index if not exists withdrawals_created_idx    on public.withdrawals (created_at desc);

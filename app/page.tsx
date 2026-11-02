@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { db } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
@@ -64,7 +65,7 @@ export default async function Dashboard() {
           <tbody>
             {sites.map(([sid, sname]) => (
               <tr key={sid} className="border-b last:border-0">
-                <td className="py-2 pr-3 font-medium">{sname}</td>
+                <td className="py-2 pr-3 font-medium"><Link className="text-brand underline" href={`/piles/${sid}`}>{sname}</Link></td>
                 {sizes.map((z) => {
                   const c = cell(sid, z.size_id);
                   return (

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { api, stamp, uploadPhoto, Photo } from "@/lib/client";
 import PhotoPicker from "@/components/PhotoPicker";
 
@@ -111,7 +111,7 @@ export default function Withdraw() {
               <li key={p.id} className="flex items-center justify-between gap-2 p-2.5">
                 <div>
                   <b>{p.pole_no}</b> <span className="chip ml-1">{p.status === "available" ? "พร้อมใช้" : "เบิกแล้ว"}</span>
-                  <div className="text-sm text-slate-500">📍 {p.sites?.label} · {p.pole_sizes?.name}{p.layer ? ` · ชั้น ${p.layer}` : ""}</div>
+                  <div className="text-sm text-slate-500">📍 {p.sites?.label} · {p.pole_sizes?.name}{p.tier ? ` · ชั้น ${p.tier} ลำดับ ${p.pos ?? "-"}` : ""}</div>
                 </div>
                 {p.status === "available"
                   ? <button type="button" className="btn !py-1.5 text-sm" onClick={() => pickFromSearch(p)}>เบิกเสานี้</button>
@@ -147,11 +147,14 @@ export default function Withdraw() {
             : poles.length === 0 ? <p className="rounded-xl bg-orange-50 p-3 text-sm text-orange-700">ไม่มีเสาคงเหลือในกองนี้</p>
             : (
               <div className="grid max-h-72 grid-cols-3 gap-2 overflow-auto rounded-xl border p-2 sm:grid-cols-4 md:grid-cols-6">
-                {poles.map((p) => (
-                  <label key={p.id} className={`flex cursor-pointer items-center gap-2 rounded-lg border px-2 py-2 text-sm ${sel.has(p.id) ? "border-brand bg-brand-light font-semibold" : "border-slate-200"}`}>
+                {poles.map((p, i) => (
+                  <Fragment key={p.id}>
+                  {(i === 0 || poles[i - 1].tier !== p.tier) && <div className="col-span-full text-xs font-semibold text-slate-500">{p.tier ? `ชั้น ${p.tier}` : "ไม่ระบุชั้น"}</div>}
+                  <label className={`flex cursor-pointer items-center gap-2 rounded-lg border px-2 py-2 text-sm ${sel.has(p.id) ? "border-brand bg-brand-light font-semibold" : "border-slate-200"}`}>
                     <input type="checkbox" className="h-4 w-4 accent-teal-700" checked={sel.has(p.id)} onChange={() => toggle(p.id)} />
                     {p.pole_no}
                   </label>
+                  </Fragment>
                 ))}
               </div>
             )}

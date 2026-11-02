@@ -6,6 +6,7 @@ const items = [
   { href: "/", label: "สรุป", icon: "📊" },
   { href: "/poles/new", label: "เพิ่มเสา", icon: "➕" },
   { href: "/withdraw", label: "เบิกเสา", icon: "📦" },
+  { href: "/piles", label: "ผังกอง", icon: "🧱" },
   { href: "/history", label: "ประวัติ", icon: "🧾" },
   { href: "/sites", label: "จุดกอง", icon: "📍" },
 ];
@@ -30,10 +31,10 @@ export default function Nav() {
         </div>
       </header>
       {/* มือถือ: แถบล่าง */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
         {items.map((i) => (
           <Link key={i.href} href={i.href}
-            className={`flex flex-col items-center py-2 text-xs ${active(i.href) ? "font-bold text-brand" : "text-slate-500"}`}>
+            className={`flex flex-col items-center py-2 text-[11px] ${active(i.href) ? "font-bold text-brand" : "text-slate-500"}`}>
             <span className="text-xl leading-none">{i.icon}</span>
             {i.label}
           </Link>
