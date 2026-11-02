@@ -5,7 +5,7 @@ import { api } from "@/lib/client";
 export default function Sites() {
   const [sites, setSites] = useState<any[]>([]);
   const [sizes, setSizes] = useState<any[]>([]);
-  const [f, setF] = useState({ name: "", lat: "", lng: "", note: "" });
+  const [f, setF] = useState({ name: "", pile: "", lat: "", lng: "", note: "" });
   const [size, setSize] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
@@ -33,7 +33,7 @@ export default function Sites() {
     setBusy(true); setMsg("");
     try {
       await api("/api/sites", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(f) });
-      setF({ name: "", lat: "", lng: "", note: "" });
+      setF({ name: "", pile: "", lat: "", lng: "", note: "" });
       setMsg("✅ เพิ่มจุดกองหมอนแล้ว");
       load();
     } catch (e: any) { setMsg("❌ " + e.message); }
@@ -55,7 +55,8 @@ export default function Sites() {
 
       <form onSubmit={addSite} className="card space-y-3">
         <h2 className="font-semibold">เพิ่มจุดกองหมอน</h2>
-        <div><label className="label">ชื่อจุดกอง *</label><input className="input" required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="เช่น กองหมอน A - อ.เมือง" /></div>
+        <div><label className="label">ชื่อจุด *</label><input className="input" required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="เช่น ที่เช่า / อ.เมือง" /></div>
+        <div><label className="label">กอง (ถ้าจุดเดียวมีหลายกอง)</label><input className="input" value={f.pile} onChange={(e) => setF({ ...f, pile: e.target.value })} placeholder="เช่น กอง 1, กอง 2 (เว้นว่างได้)" /></div>
         <div>
           <label className="label">พิกัด (วางจาก Google Maps ได้ เช่น 13.7563, 100.5018)</label>
           <input className="input" placeholder="วางพิกัดที่นี่" onChange={(e) => pasteCoord(e.target.value)} />
@@ -76,7 +77,7 @@ export default function Sites() {
           {sites.map((s) => (
             <li key={s.id} className="flex items-center justify-between gap-2 py-2">
               <div>
-                <div className="font-medium">{s.name}</div>
+                <div className="font-medium">{s.label}</div>
                 <div className="text-xs text-slate-500">{s.lat != null ? `${s.lat}, ${s.lng}` : "ไม่มีพิกัด"}{s.note ? ` · ${s.note}` : ""}</div>
               </div>
               {s.lat != null && <a className="btn-ghost !py-1.5 text-sm" target="_blank" href={`https://maps.google.com/?q=${s.lat},${s.lng}`}>🗺 แผนที่</a>}

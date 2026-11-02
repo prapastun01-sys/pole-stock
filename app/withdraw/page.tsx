@@ -80,7 +80,7 @@ export default function Withdraw() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ site_id: siteId, size_id: sizeId, pole_ids: [...sel], ...f, before_photos, after_photos }),
       });
-      setDone(`เบิกเสา ${sel.size} ต้น จาก ${site?.name} สำเร็จ${r.notified ? " และแจ้งเตือน Telegram แล้ว" : " (แต่แจ้งเตือน Telegram ไม่สำเร็จ)"}`);
+      setDone(`เบิกเสา ${sel.size} ต้น จาก ${site?.label} สำเร็จ${r.notified ? " และแจ้งเตือน Telegram แล้ว" : " (แต่แจ้งเตือน Telegram ไม่สำเร็จ)"}`);
       setSel(new Set()); setBefore([]); setAfter([]); setF({ job_name: "", wbs: "", network: "", responsible: "", team: "" });
       loadPoles();
     } catch (e: any) { setMsg("❌ " + e.message); }
@@ -111,7 +111,7 @@ export default function Withdraw() {
               <li key={p.id} className="flex items-center justify-between gap-2 p-2.5">
                 <div>
                   <b>{p.pole_no}</b> <span className="chip ml-1">{p.status === "available" ? "พร้อมใช้" : "เบิกแล้ว"}</span>
-                  <div className="text-sm text-slate-500">📍 {p.sites?.name} · {p.pole_sizes?.name}{p.layer ? ` · ชั้น ${p.layer}` : ""}</div>
+                  <div className="text-sm text-slate-500">📍 {p.sites?.label} · {p.pole_sizes?.name}{p.layer ? ` · ชั้น ${p.layer}` : ""}</div>
                 </div>
                 {p.status === "available"
                   ? <button type="button" className="btn !py-1.5 text-sm" onClick={() => pickFromSearch(p)}>เบิกเสานี้</button>
@@ -128,7 +128,7 @@ export default function Withdraw() {
           <label className="label">1) จุดกองหมอน *</label>
           <select className="input" value={siteId} onChange={(e) => setSiteId(e.target.value)} required>
             <option value="">— เลือกจุดกอง —</option>
-            {sites.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            {sites.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
           </select>
         </div>
         <div>

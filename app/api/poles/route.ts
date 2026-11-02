@@ -15,7 +15,7 @@ export async function GET(req: Request) {
 
   let query = db()
     .from("poles")
-    .select("id,pole_no,layer,status,site_id,size_id,sites(name,lat,lng),pole_sizes(name)")
+    .select("id,pole_no,layer,status,site_id,size_id,sites(name,label,lat,lng),pole_sizes(name)")
     .order("pole_no")
     .limit(1000);
 

@@ -26,7 +26,7 @@ export async function POST(req: Request) {
   try {
     const [{ data: poles }, { data: site }, { data: size }] = await Promise.all([
       s.from("poles").select("pole_no").in("id", b.pole_ids).order("pole_no"),
-      s.from("sites").select("name,lat,lng").eq("id", b.site_id).single(),
+      s.from("sites").select("label,lat,lng").eq("id", b.site_id).single(),
       s.from("pole_sizes").select("name").eq("id", b.size_id).single(),
     ]);
     const nos = (poles || []).map((p) => p.pole_no).join(", ");
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
       `โครงข่าย: ${esc(b.network)}\n` +
       `ผู้รับผิดชอบ: ${esc(b.responsible)}\n` +
       `ทีมงาน: ${esc(b.team)}\n` +
-      `จุดกองหมอน: ${esc(site?.name)}\n` +
+      `จุดกองหมอน: ${esc(site?.label)}\n` +
       `ขนาดเสา: ${esc(size?.name)}\n` +
       `จำนวน: <b>${b.pole_ids.length}</b> ต้น\n` +
       `เลขเสา: ${esc(nos)}` + map + app;

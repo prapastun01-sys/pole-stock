@@ -7,7 +7,7 @@ export const revalidate = 0;
 export default async function History() {
   const { data, error } = await db()
     .from("withdrawals")
-    .select("*, sites(name), pole_sizes(name), poles(pole_no)")
+    .select("*, sites(label), pole_sizes(name), poles(pole_no)")
     .order("created_at", { ascending: false })
     .limit(50);
 
@@ -26,7 +26,7 @@ export default async function History() {
             <span className="chip">{w.poles.length} ต้น · {w.pole_sizes?.name}</span>
           </div>
           <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm md:grid-cols-3">
-            <Item k="จุดกองหมอน" v={w.sites?.name} />
+            <Item k="จุดกองหมอน" v={w.sites?.label} />
             <Item k="WBS/ใบสั่ง" v={w.wbs} />
             <Item k="โครงข่าย" v={w.network} />
             <Item k="ผู้รับผิดชอบ" v={w.responsible} />

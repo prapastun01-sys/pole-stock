@@ -9,12 +9,17 @@ create extension if not exists "pgcrypto";
 -- ---------- 1) จุดกองหมอน ----------
 create table if not exists public.sites (
   id          uuid primary key default gen_random_uuid(),
-  name        text not null unique,
+  name        text not null,                           -- ชื่อจุด
+  pile        text not null default '',                -- กอง (ถ้าจุดเดียวมีหลายกอง)
+  label       text generated always as (
+                case when pile <> '' then name || ' / ' || pile else name end
+              ) stored,                                -- ชื่อที่แสดง เช่น "ที่เช่า / กอง 1"
   lat         double precision,
   lng         double precision,
   note        text,
   created_at  timestamptz not null default now()
 );
+create unique index if not exists sites_name_pile_uq on public.sites (name, pile);
 
 -- ---------- 2) ขนาดเสา ----------
 create table if not exists public.pole_sizes (
@@ -64,7 +69,7 @@ create or replace view public.v_stock
 with (security_invoker = true) as
 select
   s.id   as site_id,
-  s.name as site_name,
+  s.label as site_name,
   z.id   as size_id,
   z.name as size_name,
   z.sort_order,
@@ -74,7 +79,7 @@ select
 from public.sites s
 cross join public.pole_sizes z
 left join public.poles p on p.site_id = s.id and p.size_id = z.id
-group by s.id, s.name, z.id, z.name, z.sort_order;
+group by s.id, s.label, z.id, z.name, z.sort_order;
 
 -- ---------- 6) ฟังก์ชันเบิกเสาแบบ atomic ----------
 -- ถ้ามีเสาต้นใดถูกเบิกไปแล้ว/ไม่อยู่ในกองนั้น จะ rollback ทั้งใบ (กันสองคนเบิกซ้ำพร้อมกัน)

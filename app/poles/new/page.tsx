@@ -49,7 +49,7 @@ export default function NewPoles() {
       let photo: { id: string; url: string } | null = null;
       if (photos[0]) {
         setMsg("กำลังอัปโหลดรูปไป Google Drive...");
-        photo = await uploadPhoto(photos[0], ["เสา", site.name, size.name], `${layer || "pole"}_${stamp().full}.jpg`);
+        photo = await uploadPhoto(photos[0], ["เสา", site.label, size.name], `${layer || "pole"}_${stamp().full}.jpg`);
       }
       const r = await api("/api/poles", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -71,7 +71,7 @@ export default function NewPoles() {
           <label className="label">1) จุดกองหมอน *</label>
           <select className="input" value={siteId} onChange={(e) => setSiteId(e.target.value)}>
             <option value="">— เลือกจุดกอง —</option>
-            {sites.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            {sites.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
           </select>
           {site && <p className="mt-1 text-xs text-slate-500">พิกัด: {site.lat != null ? `${site.lat}, ${site.lng}` : "ยังไม่ได้ระบุ"} · <Link className="text-brand underline" href="/sites">จัดการจุดกอง</Link></p>}
           {sites.length === 0 && <p className="mt-1 text-sm text-orange-600">ยังไม่มีจุดกอง <Link className="underline" href="/sites">เพิ่มที่นี่</Link></p>}
