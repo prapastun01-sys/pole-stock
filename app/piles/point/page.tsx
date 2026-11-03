@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/supabase";
-import { fetchPoles } from "@/lib/pile";
+import { fetchPoles, pilePhotos } from "@/lib/pile";
+import PilePhotosView from "@/components/PilePhotosView";
 import StackView from "@/components/StackView";
 import KindButton from "@/components/KindButton";
 
@@ -45,7 +46,10 @@ export default async function Point({ searchParams }: { searchParams: { name?: s
         })
         .filter((p) => p.total > 0 && (showAll || p.avail > 0))
     : [];
-  const stacks = await Promise.all(piles.map((p) => fetchPoles(p.site.id, sel!.id)));
+  const [stacks, photos] = await Promise.all([
+    Promise.all(piles.map((p) => fetchPoles(p.site.id, sel!.id))),
+    pilePhotos(piles.map((p) => p.site.id)),
+  ]);
 
   const qs = (size?: string) => `/piles/point?name=${encodeURIComponent(name)}${size ? `&size=${size}` : ""}${showAll ? "&all=1" : ""}`;
   const totalAvail = allSizes.reduce((a, z) => a + z.avail, 0);
@@ -89,6 +93,7 @@ export default async function Point({ searchParams }: { searchParams: { name?: s
                 </div>
                 <Link href={`/piles/${p.site.id}`} className="btn-ghost !py-1.5 text-sm">ดูประวัติกองนี้</Link>
               </div>
+              <PilePhotosView ph={photos[p.site.id]} />
               {(() => {
                 const dep = stacks[i].filter((x: any) => x.kind === "deposit" && x.status === "available").length;
                 return dep > 0 ? <div className="mb-3"><KindButton siteId={p.site.id} sizeId={sel!.id} count={dep} /></div> : null;

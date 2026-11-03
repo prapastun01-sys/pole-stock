@@ -13,7 +13,7 @@ const items = [
 
 export default function Nav() {
   const path = usePathname();
-  if (path === "/login") return null;
+  if (path === "/login" || path.startsWith("/print")) return null;
   const active = (h: string) => (h === "/" ? path === "/" : path.startsWith(h));
 
   return (

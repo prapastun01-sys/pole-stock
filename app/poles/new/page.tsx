@@ -5,6 +5,7 @@ import { api, stamp, uploadPhoto, Photo } from "@/lib/client";
 import PhotoPicker from "@/components/PhotoPicker";
 import SizePicker from "@/components/SizePicker";
 import { KINDS } from "@/lib/kinds";
+import { useStatus } from "@/lib/status";
 
 /**
  * วิธีกรอก (2 โหมด)
@@ -43,7 +44,7 @@ export default function NewPoles() {
   const [boxes, setBoxes] = useState<TierBox[]>([{ tier: 1, text: "" }]);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState("");
+  const [msg, setMsg] = useStatus();
 
   useEffect(() => { api("/api/master").then((j) => { setSites(j.sites); setSizes(j.sizes); }).catch((e) => setMsg("❌ " + e.message)); }, []);
 
@@ -89,6 +90,7 @@ export default function NewPoles() {
         setMsg("กำลังอัปโหลดรูปไป Google Drive...");
         photo = await uploadPhoto(photos[0], ["เสา", site.label, size.name], `กอง_${stamp().full}.jpg`);
       }
+      setMsg("กำลังบันทึกเสา...");
       const r = await api("/api/poles", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ site_id: siteId, size_id: sizeId, kind, photo_url: photo?.url, photo_id: photo?.id, tiers: parsed }),

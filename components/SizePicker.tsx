@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { api } from "@/lib/client";
+import { notify } from "@/lib/status";
 
 // กดเลือกขนาดจากรายการ ถ้าไม่มีให้กด "+ ขนาดอื่น" เพื่อเพิ่มใหม่
 export default function SizePicker({
@@ -16,12 +17,12 @@ export default function SizePicker({
     if (!n) return;
     const exist = sizes.find((s) => s.name.trim().toLowerCase() === n.toLowerCase());
     if (exist) { onChange(exist.id); setName(""); setAdding(false); return; } // มีอยู่แล้ว → เลือกให้เลย
-    setBusy(true); setErr("");
+    setBusy(true); setErr(""); notify("กำลังเพิ่มขนาดเสา...");
     try {
       const j = await api("/api/sizes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: n }) });
       onAdded(j.size); onChange(j.size.id);
-      setName(""); setAdding(false);
-    } catch (e: any) { setErr(e.message); }
+      setName(""); setAdding(false); notify(`✅ เพิ่มขนาด ${j.size.name} แล้ว`);
+    } catch (e: any) { setErr(e.message); notify("❌ " + e.message); }
     setBusy(false);
   }
 

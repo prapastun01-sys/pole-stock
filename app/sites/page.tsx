@@ -1,13 +1,14 @@
 "use client";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/client";
+import { useStatus } from "@/lib/status";
 
 export default function Sites() {
   const [sites, setSites] = useState<any[]>([]);
   const [sizes, setSizes] = useState<any[]>([]);
   const [f, setF] = useState({ name: "", zone: "", pile: "", lat: "", lng: "", note: "" });
   const [size, setSize] = useState("");
-  const [msg, setMsg] = useState("");
+  const [msg, setMsg] = useStatus();
   const [busy, setBusy] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [d, setD] = useState({ name: "", zone: "", pile: "", lat: "", lng: "", note: "" });
@@ -32,7 +33,7 @@ export default function Sites() {
 
   async function addSite(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true); setMsg("");
+    setBusy(true); setMsg("กำลังบันทึก...");
     try {
       await api("/api/sites", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(f) });
       setF({ name: "", zone: "", pile: "", lat: "", lng: "", note: "" });
@@ -59,9 +60,10 @@ export default function Sites() {
   async function addSize(e: React.FormEvent) {
     e.preventDefault();
     if (!size.trim()) return;
+    setMsg("กำลังเพิ่มขนาดเสา...");
     try {
       await api("/api/sizes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: size }) });
-      setSize(""); load();
+      setSize(""); load(); setMsg("✅ เพิ่มขนาดเสาแล้ว");
     } catch (e: any) { setMsg("❌ " + e.message); }
   }
 

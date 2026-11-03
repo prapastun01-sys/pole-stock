@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, stamp, uploadPhoto, Photo } from "@/lib/client";
 import PhotoPicker from "@/components/PhotoPicker";
+import { useStatus } from "@/lib/status";
 
 type P = { id: string; url: string };
 
@@ -10,16 +11,17 @@ export default function HistoryCard({ w, groups, when }: { w: any; groups: { sit
   const router = useRouter();
   const [edit, setEdit] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState("");
+  const [msg, setMsg] = useStatus();
   const [doneOpen, setDoneOpen] = useState(false);
   const [cutNo, setCutNo] = useState(w.cut_no || "");
 
   async function patchDone(body: any) {
-    setBusy(true); setMsg("");
+    setBusy(true); setMsg("กำลังบันทึกสถานะงาน...");
     try {
       await api(`/api/withdrawals/${w.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       setDoneOpen(false);
       router.refresh();
+      setMsg("✅ บันทึกสถานะงานแล้ว");
     } catch (e: any) { setMsg("❌ " + e.message); }
     setBusy(false);
   }
@@ -37,7 +39,7 @@ export default function HistoryCard({ w, groups, when }: { w: any; groups: { sit
 
   async function save() {
     if (!f.job_name.trim() || !f.responsible.trim()) return setMsg("❌ กรุณากรอกชื่องานและผู้รับผิดชอบ");
-    setBusy(true); setMsg("");
+    setBusy(true); setMsg("กำลังบันทึก...");
     try {
       // เก็บรูปใหม่ในโฟลเดอร์ของวันที่เบิก (ตามวันที่ของใบเบิก)
       const ymd = new Date(w.created_at).toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" }); // YYYY-MM-DD
@@ -57,8 +59,21 @@ export default function HistoryCard({ w, groups, when }: { w: any; groups: { sit
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...f, before_photos: [...before, ...addB], after_photos: [...after, ...addA] }),
       });
-      setEdit(false); setMsg(""); setNewBefore([]); setNewAfter([]);
+      setEdit(false); setNewBefore([]); setNewAfter([]);
       router.refresh();
+      setMsg("✅ บันทึกการแก้ไขแล้ว");
+    } catch (e: any) { setMsg("❌ " + e.message); }
+    setBusy(false);
+  }
+
+  async function remove() {
+    const n = groups.reduce((a, g) => a + g.nos.length, 0);
+    if (!confirm(`ลบใบเบิก "${w.job_name}" ?\n\nเสา ${n} ต้นในใบนี้จะกลับไปเป็น "คงเหลือ" ในกองเดิม\n(รูปใน Google Drive จะไม่ถูกลบ) การลบย้อนกลับไม่ได้`)) return;
+    setBusy(true); setMsg("กำลังลบใบเบิกและคืนเสาเข้ากอง...");
+    try {
+      await api(`/api/withdrawals/${w.id}`, { method: "DELETE" });
+      router.refresh();
+      setMsg(`✅ ลบใบเบิกแล้ว คืนเสา ${n} ต้นเข้ากอง`);
     } catch (e: any) { setMsg("❌ " + e.message); }
     setBusy(false);
   }
@@ -75,7 +90,13 @@ export default function HistoryCard({ w, groups, when }: { w: any; groups: { sit
         <div className="flex items-center gap-2">
           {w.done_at && <span className="chip !bg-emerald-100 !text-emerald-700">✅ งานเสร็จ</span>}
           <span className="chip">{total} ต้น · {groups.length} กอง</span>
-          {!edit && <button className="btn-ghost !py-1 text-sm" onClick={() => setEdit(true)}>✏️ แก้ไข / เพิ่มรูป</button>}
+          {!edit && (
+            <>
+              <a className="btn-ghost !py-1 text-sm" href={`/print/${w.id}`} target="_blank" rel="noreferrer">📄 ใบเบิก PDF</a>
+              <button className="btn-ghost !py-1 text-sm" onClick={() => setEdit(true)}>✏️ แก้ไข / เพิ่มรูป</button>
+              <button className="btn-ghost !py-1 text-sm !text-red-600" disabled={busy} onClick={remove}>🗑 ลบ</button>
+            </>
+          )}
         </div>
       </div>
 

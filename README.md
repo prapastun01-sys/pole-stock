@@ -127,5 +127,6 @@ npm run dev                  # http://localhost:3000
 | `migration_003_stack_layout.sql` | ชั้น/ลำดับของเสาในกอง |
 | `migration_004_multi_pile_withdraw.sql` | ใบเบิกเบิกได้หลายกอง/หลายขนาด |
 | `migration_005_zone_kind_done.sql` | Zone ต่อชื่อจุด, ประเภทเสา (ใหม่/รื้อถอน/หมดอายุ/หัก/รับฝาก), งานเสร็จ + เลขใบตัดงาน |
+| `migration_006_doc_no.sql` | เลขที่ใบเบิกรันอัตโนมัติ (ใบเบิก PDF) |
 
 (ติดตั้งใหม่ทั้งระบบ: รัน `schema.sql` ไฟล์เดียวพอ เพราะรวมทุกอย่างไว้แล้ว)

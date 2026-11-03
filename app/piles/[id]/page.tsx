@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/supabase";
+import { pilePhotos } from "@/lib/pile";
+import PilePhotosView from "@/components/PilePhotosView";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -57,7 +59,7 @@ export default async function Pile({ params }: { params: { id: string } }) {
 
   const sizeNames = Array.from(new Set(poles.map((p) => p.pole_sizes?.name).filter(Boolean)));
   const avail = poles.filter((p) => p.status === "available").length;
-  const photos = Array.from(new Set(poles.map((p) => p.photo_url).filter(Boolean))).slice(0, 6) as string[];
+  const phs = await pilePhotos([params.id]);
 
   // ประวัติ: เพิ่มเสา (จัดกลุ่มตามวัน+ขนาด) + เบิกเสา
   const adds = new Map<string, { ts: string; size: string; n: number }>();
@@ -91,14 +93,10 @@ export default async function Pile({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      {photos.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {photos.map((u) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <a key={u} href={u.replace("/thumbnail?", "/uc?export=view&").replace(/&sz=.*/, "")} target="_blank" rel="noreferrer"><img src={u} alt="รูปกอง" className="h-24 w-32 rounded-lg border object-cover" /></a>
-          ))}
-        </div>
-      )}
+      <section className="card">
+        <h2 className="mb-2 font-semibold">รูปกอง</h2>
+        <PilePhotosView ph={phs[params.id]} />
+      </section>
 
       <section className="card">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">

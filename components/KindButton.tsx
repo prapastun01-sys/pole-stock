@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/client";
+import { notify } from "@/lib/status";
 
 // ปุ่มเปลี่ยนเสารับฝากทั้งกอง → เสาใหม่
 export default function KindButton({ siteId, sizeId, count }: { siteId: string; sizeId: string; count: number }) {
@@ -11,11 +12,11 @@ export default function KindButton({ siteId, sizeId, count }: { siteId: string; 
 
   async function go() {
     if (!confirm(`เปลี่ยนเสารับฝาก ${count} ต้น ในกองนี้ เป็น "เสาใหม่" ใช่หรือไม่?`)) return;
-    setBusy(true);
+    setBusy(true); notify("กำลังเปลี่ยนเป็นเสาใหม่...");
     try {
       await api("/api/poles/kind", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ site_id: siteId, size_id: sizeId, from: "deposit", to: "new" }) });
-      router.refresh();
-    } catch (e: any) { alert(e.message); }
+      router.refresh(); notify(`✅ เปลี่ยนเสารับฝาก ${count} ต้น เป็นเสาใหม่แล้ว`);
+    } catch (e: any) { notify("❌ " + e.message); }
     setBusy(false);
   }
   return (

@@ -3,6 +3,7 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import { api, stamp, uploadPhoto, Photo } from "@/lib/client";
 import PhotoPicker from "@/components/PhotoPicker";
 import { kindOf } from "@/lib/kinds";
+import { useStatus } from "@/lib/status";
 
 const REQUIRE_PHOTOS = false; // รูปก่อน/หลังขน ไม่บังคับ (ตั้งเป็น true ถ้าต้องการบังคับแนบ)
 
@@ -29,8 +30,9 @@ export default function Withdraw() {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<any[] | null>(null);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState("");
+  const [msg, setMsg] = useStatus();
   const [done, setDone] = useState<string | null>(null);
+  const [doneId, setDoneId] = useState<string | null>(null);
 
   useEffect(() => { api("/api/master").then((j) => { setSites(j.sites); setSizes(j.sizes); }).catch((e) => setMsg("❌ " + e.message)); }, []);
 
@@ -174,6 +176,8 @@ export default function Withdraw() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pole_ids: list.map((p) => p.id), ...f, before_photos, after_photos }),
       });
+      setDoneId(r.id);
+      setMsg("✅ บันทึกใบเบิกเรียบร้อย");
       setDone(`เบิกเสา ${list.length} ต้น จาก ${cart.length} กลุ่ม สำเร็จ${r.notified ? " และแจ้งเตือน Telegram แล้ว" : " (แต่แจ้งเตือน Telegram ไม่สำเร็จ)"}`);
       setPicked({}); setBefore([]); setAfter([]); setF(emptyForm); setQty(""); setPasteRow("");
       loadPoles();
@@ -185,8 +189,9 @@ export default function Withdraw() {
     <div className="card mt-8 space-y-4 text-center">
       <div className="text-5xl">✅</div>
       <p className="font-semibold">{done}</p>
-      <div className="flex justify-center gap-2">
-        <button className="btn" onClick={() => { setDone(null); setMsg(""); }}>เบิกเพิ่ม</button>
+      <div className="flex flex-wrap justify-center gap-2">
+        {doneId && <a className="btn" target="_blank" rel="noreferrer" href={`/print/${doneId}?auto=1`}>📄 เปิดใบเบิก / บันทึกเป็น PDF</a>}
+        <button className="btn-ghost" onClick={() => { setDone(null); setDoneId(null); setMsg(""); }}>เบิกเพิ่ม</button>
         <a className="btn-ghost" href="/history">ดูประวัติ</a>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import Nav from "@/components/Nav";
+import { Toaster } from "@/lib/status";
 
 export const metadata: Metadata = {
   title: "ระบบเบิกเสา",
@@ -19,6 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <Nav />
+        <Toaster />
         <main className="mx-auto max-w-5xl px-4 pb-28 pt-4 md:pb-10">{children}</main>
       </body>
     </html>
