@@ -1,3 +1,5 @@
+import { kindOf } from "@/lib/kinds";
+
 // แสดงผังกองเสา: ชั้นบนอยู่ด้านบน ชั้น 1 อยู่ล่าง อ่านซ้าย → ขวา (ใช้ได้ทั้ง server/client)
 export default function StackView({ poles, showSize }: { poles: any[]; showSize?: boolean }) {
   const byTier = new Map<number, any[]>();
@@ -20,6 +22,7 @@ export default function StackView({ poles, showSize }: { poles: any[]; showSize?
                 className={`min-w-[3.6rem] rounded-lg border px-2 py-1.5 text-center text-sm ${p.status === "available" ? "border-yellow-400 bg-yellow-100 font-semibold" : "border-slate-300 bg-slate-200 text-slate-400 line-through"}`}>
                 {p.pole_no}
                 {showSize && <div className="text-[10px] font-normal no-underline">{p.pole_sizes?.name}</div>}
+                {p.kind && p.kind !== "new" && <div className={`mt-0.5 rounded px-1 text-[10px] font-normal no-underline ${kindOf(p.kind).cls}`}>{kindOf(p.kind).short}</div>}
               </div>
             ))}
           </div>

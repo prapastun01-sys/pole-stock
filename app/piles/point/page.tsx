@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/supabase";
 import { fetchPoles } from "@/lib/pile";
 import StackView from "@/components/StackView";
+import KindButton from "@/components/KindButton";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -13,7 +14,7 @@ export default async function Point({ searchParams }: { searchParams: { name?: s
   const showAll = searchParams.all === "1";
   const s = db();
 
-  const { data: sites } = await s.from("sites").select("id,name,pile,label,lat,lng,note").eq("name", name).order("pile");
+  const { data: sites } = await s.from("sites").select("id,name,zone,pile,label,lat,lng,note").eq("name", name).order("pile");
   if (!sites || sites.length === 0)
     return <div className="card">ไม่พบจุดกองหมอนนี้ <Link className="text-brand underline" href="/piles">กลับ</Link></div>;
 
@@ -83,11 +84,15 @@ export default async function Point({ searchParams }: { searchParams: { name?: s
             <section key={p.site.id} className="card">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <div className="font-semibold">{p.site.pile ? p.site.pile : "กอง (ไม่ระบุชื่อ)"}</div>
+                  <div className="font-semibold">{[p.site.zone, p.site.pile].filter(Boolean).join(" / ") || "กอง (ไม่ระบุชื่อ)"}</div>
                   <div className="text-xs text-slate-500">คงเหลือ <b className="text-emerald-600">{p.avail}</b> / {p.total} ต้น</div>
                 </div>
                 <Link href={`/piles/${p.site.id}`} className="btn-ghost !py-1.5 text-sm">ดูประวัติกองนี้</Link>
               </div>
+              {(() => {
+                const dep = stacks[i].filter((x: any) => x.kind === "deposit" && x.status === "available").length;
+                return dep > 0 ? <div className="mb-3"><KindButton siteId={p.site.id} sizeId={sel!.id} count={dep} /></div> : null;
+              })()}
               <StackView poles={stacks[i]} />
             </section>
           ))}

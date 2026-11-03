@@ -7,7 +7,7 @@ export async function fetchPoles(siteId: string, sizeId?: string) {
   for (let from = 0; ; from += 1000) {
     let q = s
       .from("poles")
-      .select("id,pole_no,tier,pos,status,photo_url,created_at,size_id,withdrawal_id,pole_sizes(name),withdrawals(job_name)")
+      .select("id,pole_no,tier,pos,status,kind,photo_url,created_at,size_id,withdrawal_id,pole_sizes(name),withdrawals(job_name)")
       .eq("site_id", siteId)
       .order("tier", { ascending: true, nullsFirst: false })
       .order("pos", { ascending: true, nullsFirst: false })

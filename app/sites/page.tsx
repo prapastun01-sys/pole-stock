@@ -5,12 +5,12 @@ import { api } from "@/lib/client";
 export default function Sites() {
   const [sites, setSites] = useState<any[]>([]);
   const [sizes, setSizes] = useState<any[]>([]);
-  const [f, setF] = useState({ name: "", pile: "", lat: "", lng: "", note: "" });
+  const [f, setF] = useState({ name: "", zone: "", pile: "", lat: "", lng: "", note: "" });
   const [size, setSize] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [d, setD] = useState({ name: "", pile: "", lat: "", lng: "", note: "" });
+  const [d, setD] = useState({ name: "", zone: "", pile: "", lat: "", lng: "", note: "" });
 
   const load = () => api("/api/master").then((j) => { setSites(j.sites); setSizes(j.sizes); }).catch((e) => setMsg(e.message));
   useEffect(() => { load(); }, []);
@@ -35,7 +35,7 @@ export default function Sites() {
     setBusy(true); setMsg("");
     try {
       await api("/api/sites", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(f) });
-      setF({ name: "", pile: "", lat: "", lng: "", note: "" });
+      setF({ name: "", zone: "", pile: "", lat: "", lng: "", note: "" });
       setMsg("✅ เพิ่มจุดกองหมอนแล้ว");
       load();
     } catch (e: any) { setMsg("❌ " + e.message); }
@@ -44,7 +44,7 @@ export default function Sites() {
 
   function startEdit(s: any) {
     setEditId(s.id);
-    setD({ name: s.name || "", pile: s.pile || "", lat: s.lat ?? "", lng: s.lng ?? "", note: s.note || "" } as any);
+    setD({ name: s.name || "", zone: s.zone || "", pile: s.pile || "", lat: s.lat ?? "", lng: s.lng ?? "", note: s.note || "" } as any);
     setMsg("");
   }
   async function saveEdit() {
@@ -72,6 +72,7 @@ export default function Sites() {
       <form onSubmit={addSite} className="card space-y-3">
         <h2 className="font-semibold">เพิ่มจุดกองหมอน</h2>
         <div><label className="label">ชื่อจุด *</label><input className="input" required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="เช่น ที่เช่า / อ.เมือง" /></div>
+        <div><label className="label">Zone</label><input className="input" value={f.zone} onChange={(e) => setF({ ...f, zone: e.target.value })} placeholder="เช่น โซน A, Zone 1 (เว้นว่างได้)" /></div>
         <div><label className="label">กอง (ถ้าจุดเดียวมีหลายกอง)</label><input className="input" value={f.pile} onChange={(e) => setF({ ...f, pile: e.target.value })} placeholder="เช่น กอง 1, กอง 2 (เว้นว่างได้)" /></div>
         <div>
           <label className="label">พิกัด (วางจาก Google Maps ได้ เช่น 13.7563, 100.5018)</label>
@@ -95,6 +96,7 @@ export default function Sites() {
               {editId === s.id ? (
                 <div className="space-y-2 rounded-xl bg-slate-50 p-3">
                   <div><label className="label">ชื่อจุด *</label><input className="input" value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} /></div>
+                  <div><label className="label">Zone</label><input className="input" value={d.zone} onChange={(e) => setD({ ...d, zone: e.target.value })} placeholder="เว้นว่างได้" /></div>
                   <div><label className="label">กอง</label><input className="input" value={d.pile} onChange={(e) => setD({ ...d, pile: e.target.value })} placeholder="เว้นว่างได้" /></div>
                   <div className="grid grid-cols-2 gap-2">
                     <div><label className="label">Latitude</label><input className="input" inputMode="decimal" value={d.lat} onChange={(e) => setD({ ...d, lat: e.target.value })} /></div>

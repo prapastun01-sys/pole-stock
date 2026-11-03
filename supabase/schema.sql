@@ -10,16 +10,19 @@ create extension if not exists "pgcrypto";
 create table if not exists public.sites (
   id          uuid primary key default gen_random_uuid(),
   name        text not null,                           -- ชื่อจุด
+  zone        text not null default '',                -- Zone ต่อท้ายชื่อจุด
   pile        text not null default '',                -- กอง (ถ้าจุดเดียวมีหลายกอง)
   label       text generated always as (
-                case when pile <> '' then name || ' / ' || pile else name end
-              ) stored,                                -- ชื่อที่แสดง เช่น "ที่เช่า / กอง 1"
+                name
+                || case when zone <> '' then ' / ' || zone else '' end
+                || case when pile <> '' then ' / ' || pile else '' end
+              ) stored,                                -- ชื่อที่แสดง เช่น "ที่เช่า / โซน A / กอง 1"
   lat         double precision,
   lng         double precision,
   note        text,
   created_at  timestamptz not null default now()
 );
-create unique index if not exists sites_name_pile_uq on public.sites (name, pile);
+create unique index if not exists sites_name_zone_pile_uq on public.sites (name, zone, pile);
 
 -- ---------- 2) ขนาดเสา ----------
 create table if not exists public.pole_sizes (
@@ -39,6 +42,8 @@ create table if not exists public.withdrawals (
   network       text,
   responsible   text not null,
   team          text,
+  done_at       timestamptz,                         -- เวลาที่กดงานเสร็จ
+  cut_no        text,                                -- เลขใบตัดงาน
   before_photos jsonb not null default '[]'::jsonb,   -- [{id,url}]
   after_photos  jsonb not null default '[]'::jsonb,   -- [{id,url}]
   created_at    timestamptz not null default now()
@@ -55,6 +60,7 @@ create table if not exists public.poles (
   size_id       uuid not null references public.pole_sizes(id),
   photo_url     text,
   photo_id      text,
+  kind          text not null default 'new' check (kind in ('new','dismantled','expired','broken','deposit')), -- เสาใหม่/รื้อถอน/หมดอายุ/หัก/รับฝาก
   status        text not null default 'available' check (status in ('available','withdrawn')),
   withdrawal_id uuid references public.withdrawals(id),
   withdrawn_at  timestamptz,

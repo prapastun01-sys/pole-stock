@@ -19,6 +19,21 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       patch[k] = b[k].map((x: any) => ({ id: String(x.id), url: String(x.url) }));
     }
   }
+  // งานเสร็จ: ต้องมีเลขใบตัดงาน
+  if ("done" in b) {
+    if (b.done) {
+      const cut = String(b.cut_no || "").trim();
+      if (!cut) return NextResponse.json({ error: "กรุณากรอกเลขใบตัดงาน" }, { status: 400 });
+      patch.done_at = new Date().toISOString();
+      patch.cut_no = cut;
+    } else {
+      patch.done_at = null;
+    }
+  } else if ("cut_no" in b) {
+    const cut = String(b.cut_no || "").trim();
+    if (!cut) return NextResponse.json({ error: "เลขใบตัดงานต้องไม่ว่าง" }, { status: 400 });
+    patch.cut_no = cut;
+  }
   if (Object.keys(patch).length === 0) return NextResponse.json({ error: "ไม่มีข้อมูลให้แก้ไข" }, { status: 400 });
 
   const { error } = await db().from("withdrawals").update(patch).eq("id", params.id);

@@ -10,14 +10,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const { data, error } = await db()
     .from("sites")
-    .update({ name, pile: String(b.pile || "").trim(), lat: num(b.lat), lng: num(b.lng), note: b.note || null })
+    .update({ name, zone: String(b.zone || "").trim(), pile: String(b.pile || "").trim(), lat: num(b.lat), lng: num(b.lng), note: b.note || null })
     .eq("id", params.id)
     .select()
     .single();
 
   if (error) {
     const dup = error.code === "23505";
-    return NextResponse.json({ error: dup ? "มีจุดและกองนี้อยู่แล้ว (ชื่อจุด + กอง ต้องไม่ซ้ำกัน)" : error.message }, { status: dup ? 409 : 500 });
+    return NextResponse.json({ error: dup ? "มีจุดนี้อยู่แล้ว (ชื่อจุด + Zone + กอง ต้องไม่ซ้ำกัน)" : error.message }, { status: dup ? 409 : 500 });
   }
   return NextResponse.json({ site: data });
 }

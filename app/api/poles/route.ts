@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/supabase";
+import { KIND_VALUES } from "@/lib/kinds";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -16,15 +17,16 @@ export async function GET(req: Request) {
 
   let query = db()
     .from("poles")
-    .select("id,pole_no,layer,tier,pos,status,site_id,size_id,sites(name,label,lat,lng),pole_sizes(name)")
+    .select("id,pole_no,layer,tier,pos,status,kind,site_id,size_id,sites(name,label,lat,lng),pole_sizes(name)")
     .order("tier", { ascending: true, nullsFirst: false })
     .order("pos", { ascending: true, nullsFirst: false })
     .order("pole_no")
     .limit(1000);
 
   if (q) query = query.ilike("pole_no", `%${q.replace(/[%_]/g, "")}%`).limit(50);
-  if (site) query = query.eq("site_id", site);
-  if (size) query = query.eq("size_id", size);
+  // site / size รับได้หลายค่า คั่นด้วย ,
+  if (site) query = query.in("site_id", site.split(",").filter(Boolean));
+  if (size) query = query.in("size_id", size.split(",").filter(Boolean));
   if (status) query = query.eq("status", status);
 
   const { data, error } = await query;
@@ -38,6 +40,8 @@ export async function POST(req: Request) {
   const b = await req.json();
   if (!b.site_id || !b.size_id) return NextResponse.json({ error: "กรุณาเลือกจุดกองและขนาดเสา" }, { status: 400 });
 
+  const kind = b.kind || "new";
+  if (!KIND_VALUES.includes(kind)) return NextResponse.json({ error: "ประเภทเสาไม่ถูกต้อง" }, { status: 400 });
   const tiers: { tier: number; nos: any[] }[] = Array.isArray(b.tiers) ? b.tiers : [];
   const s = db();
   const nextPos = new Map<number, number>();
@@ -62,7 +66,7 @@ export async function POST(req: Request) {
       nextPos.set(tier, pos);
       rows.push({
         pole_no: no, tier, pos, layer: String(tier),
-        site_id: b.site_id, size_id: b.size_id,
+        site_id: b.site_id, size_id: b.size_id, kind,
         photo_url: b.photo_url || null, photo_id: b.photo_id || null,
       });
     }

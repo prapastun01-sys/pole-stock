@@ -11,6 +11,18 @@ export default function HistoryCard({ w, groups, when }: { w: any; groups: { sit
   const [edit, setEdit] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [doneOpen, setDoneOpen] = useState(false);
+  const [cutNo, setCutNo] = useState(w.cut_no || "");
+
+  async function patchDone(body: any) {
+    setBusy(true); setMsg("");
+    try {
+      await api(`/api/withdrawals/${w.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      setDoneOpen(false);
+      router.refresh();
+    } catch (e: any) { setMsg("❌ " + e.message); }
+    setBusy(false);
+  }
   const [f, setF] = useState({ job_name: w.job_name || "", wbs: w.wbs || "", network: w.network || "", responsible: w.responsible || "", team: w.team || "" });
   const [before, setBefore] = useState<P[]>(w.before_photos || []);
   const [after, setAfter] = useState<P[]>(w.after_photos || []);
@@ -61,6 +73,7 @@ export default function HistoryCard({ w, groups, when }: { w: any; groups: { sit
           <div className="text-sm text-slate-500">{when}</div>
         </div>
         <div className="flex items-center gap-2">
+          {w.done_at && <span className="chip !bg-emerald-100 !text-emerald-700">✅ งานเสร็จ</span>}
           <span className="chip">{total} ต้น · {groups.length} กอง</span>
           {!edit && <button className="btn-ghost !py-1 text-sm" onClick={() => setEdit(true)}>✏️ แก้ไข / เพิ่มรูป</button>}
         </div>
@@ -80,6 +93,31 @@ export default function HistoryCard({ w, groups, when }: { w: any; groups: { sit
           <Field label="ทีมงาน" v={f.team} on={(v) => setF({ ...f, team: v })} />
         </div>
       )}
+
+      {/* สถานะงานเสร็จ + เลขใบตัดงาน */}
+      <div className={`rounded-xl border p-3 text-sm ${w.done_at ? "border-emerald-300 bg-emerald-50" : "border-slate-200"}`}>
+        {w.done_at ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium text-emerald-700">✅ งานเสร็จ</span>
+            <span className="text-slate-500">{new Date(w.done_at).toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", dateStyle: "medium" })}</span>
+            <span>· เลขใบตัดงาน: <b>{w.cut_no}</b></span>
+            <button type="button" className="ml-auto text-brand underline" onClick={() => setDoneOpen(!doneOpen)}>แก้เลขใบตัดงาน</button>
+            <button type="button" className="text-red-600 underline" disabled={busy} onClick={() => { if (confirm("ยกเลิกสถานะงานเสร็จ?")) patchDone({ done: false }); }}>ยกเลิกสถานะ</button>
+          </div>
+        ) : !doneOpen ? (
+          <button type="button" className="btn !py-1.5" onClick={() => setDoneOpen(true)}>✅ งานเสร็จ</button>
+        ) : null}
+        {doneOpen && (
+          <div className="mt-2 flex flex-wrap items-end gap-2">
+            <div className="grow">
+              <label className="label">เลขใบตัดงาน *</label>
+              <input className="input" autoFocus value={cutNo} onChange={(e) => setCutNo(e.target.value)} placeholder="กรอกเลขใบตัดงาน" />
+            </div>
+            <button type="button" className="btn" disabled={busy || !cutNo.trim()} onClick={() => patchDone(w.done_at ? { cut_no: cutNo } : { done: true, cut_no: cutNo })}>{w.done_at ? "บันทึกเลข" : "ยืนยันงานเสร็จ"}</button>
+            <button type="button" className="btn-ghost" onClick={() => setDoneOpen(false)}>ยกเลิก</button>
+          </div>
+        )}
+      </div>
 
       <div className="space-y-1.5">
         {groups.map((g) => (
