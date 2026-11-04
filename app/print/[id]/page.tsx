@@ -43,7 +43,8 @@ const css = `
 .doc .trow { display:flex; align-items:flex-start; gap:6px; margin-bottom:4px; }
 .doc .trow .tl { width:34px; font-size:11px; color:#888; padding-top:6px; flex:none; }
 .doc .tgrid { flex:1; display:grid; grid-template-columns:repeat(10,1fr); gap:4px; }
-.doc .cell { text-align:center; padding:3px 0; border-radius:7px; border:1px solid #e0b800; background:#fff3b0; font-weight:600; font-size:12.5px; }
+.doc .cell { position:relative; text-align:center; padding:3px 0 10px; border-radius:7px; border:1px solid #e0b800; background:#fff3b0; font-weight:600; font-size:12.5px; }
+.doc .cell .tm { position:absolute; right:3px; bottom:0; font-size:7.5px; line-height:1.2; font-weight:600; color:#0f766e; max-width:95%; white-space:nowrap; overflow:hidden; text-overflow:clip; }
 .doc .cell.out { background:#e3e8ef; border-color:#c7d0dc; color:#8a94a3; text-decoration:line-through; }
 .doc .cell.old { background:#f4f5f7; border-color:#e5e7eb; color:#b8bec9; font-weight:400; }
 @media print {
@@ -136,7 +137,7 @@ export default async function Print({ params, searchParams }: { params: { id: st
                   <div className="tl">{t === 0 ? "ไม่ระบุ" : `ชั้น ${t}`}</div>
                   <div className="tgrid">
                     {pl.byTier.get(t)!.map((x: any) => (
-                      <div key={x.id} className={`cell ${x.withdrawal_id === (w as any).id ? "out" : x.status === "available" ? "" : "old"}`}>{x.pole_no}</div>
+                      <div key={x.id} className={`cell ${x.withdrawal_id === (w as any).id ? "out" : x.status === "available" ? "" : "old"}`}>{x.pole_no}{x.withdrawals?.team && x.status !== "available" ? <span className="tm">{x.withdrawals.team}</span> : null}</div>
                     ))}
                   </div>
                 </div>
