@@ -2,6 +2,8 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { api, stamp, uploadPhoto, Photo } from "@/lib/client";
 import PhotoPicker from "@/components/PhotoPicker";
+import ItemsPicker from "@/components/ItemsPicker";
+import type { Item } from "@/lib/items";
 import { kindOf } from "@/lib/kinds";
 import { useStatus } from "@/lib/status";
 
@@ -34,6 +36,9 @@ export default function Withdraw() {
   const [done, setDone] = useState<string | null>(null);
   const [doneId, setDoneId] = useState<string | null>(null);
 
+  const [accessories, setAccessories] = useState<any[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
+  useEffect(() => { api("/api/accessories").then((j) => setAccessories(j.accessories)).catch(() => {}); }, []);
   const [stock, setStock] = useState<any[]>([]);
   const [pointName, setPointName] = useState("");
   const loadMaster = () => api("/api/master").then((j) => { setSites(j.sites); setSizes(j.sizes); setStock(j.stock || []); }).catch((e) => setMsg("❌ " + e.message));
@@ -205,12 +210,12 @@ export default function Withdraw() {
       setMsg("กำลังบันทึกใบเบิก...");
       const r = await api("/api/withdraw", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pole_ids: list.map((p) => p.id), ...f, before_photos, after_photos }),
+        body: JSON.stringify({ pole_ids: list.map((p) => p.id), ...f, before_photos, after_photos, items }),
       });
       setDoneId(r.id);
       setMsg("✅ บันทึกใบเบิกเรียบร้อย");
       setDone(`เบิกเสา ${list.length} ต้น จาก ${cart.length} กลุ่ม สำเร็จ${r.notified ? " และแจ้งเตือน Telegram แล้ว" : " (แต่แจ้งเตือน Telegram ไม่สำเร็จ)"}`);
-      setPicked({}); setBefore([]); setAfter([]); setF(emptyForm); setQty(""); setPasteRow("");
+      setPicked({}); setBefore([]); setAfter([]); setItems([]); setF(emptyForm); setQty(""); setPasteRow("");
       loadPoles(); loadMaster();
     } catch (e: any) { setMsg("❌ " + e.message); }
     setBusy(false);
@@ -408,9 +413,14 @@ export default function Withdraw() {
         </div>
       </section>
 
+      <section className="card space-y-2">
+        <label className="label !mb-0">10) อุปกรณ์เสริม <span className="text-slate-400">(ติ๊กได้หลายรายการ ใส่จำนวนต่อรายการ · ไม่เบิกก็ข้ามได้)</span></label>
+        <ItemsPicker accessories={accessories} value={items} onChange={setItems} />
+      </section>
+
       <section className="card space-y-4">
-        <PhotoPicker label="10) รูปก่อนขนเสา (หลายรูปได้ / บีบ ≤ 1MB อัตโนมัติ)" photos={before} onChange={setBefore} />
-        <PhotoPicker label="11) รูปหลังขนเสา (หลายรูปได้ / บีบ ≤ 1MB อัตโนมัติ)" photos={after} onChange={setAfter} />
+        <PhotoPicker label="11) รูปก่อนขนเสา (หลายรูปได้ / บีบ ≤ 1MB อัตโนมัติ)" photos={before} onChange={setBefore} />
+        <PhotoPicker label="12) รูปหลังขนเสา (หลายรูปได้ / บีบ ≤ 1MB อัตโนมัติ)" photos={after} onChange={setAfter} />
       </section>
 
       <button className="btn w-full py-3 text-lg" disabled={busy}>{busy ? "กำลังดำเนินการ..." : `ยืนยันเบิกเสา ${list.length} ต้น`}</button>

@@ -176,3 +176,12 @@ on conflict (name) do nothing;
 insert into public.areas (name, sort_order) values
   ('นครพนม', 10), ('ธาตุพนม', 20), ('นาแก', 30), ('บ้านแพง', 40)
 on conflict (name) do nothing;
+
+-- ---- migration 008: อุปกรณ์เสริม ----
+create table if not exists public.accessories (
+  id uuid primary key default gen_random_uuid(), code text not null unique, name text not null,
+  sort_order int not null default 0, active boolean not null default true, created_at timestamptz not null default now()
+);
+alter table public.accessories enable row level security;
+alter table public.withdrawals add column if not exists items jsonb not null default '[]'::jsonb;
+-- (ข้อมูลตั้งต้น 11 รายการอยู่ใน migration_008_accessories.sql)

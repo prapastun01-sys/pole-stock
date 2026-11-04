@@ -1,5 +1,6 @@
 import { db } from "@/lib/supabase";
 import PrintBar from "@/components/PrintBar";
+import { fetchPoles, pilePhotos } from "@/lib/pile";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -31,6 +32,20 @@ const css = `
 .doc .sign > div { flex:1; text-align:center; font-size:13px; }
 .doc .sign .line { margin:38px 6px 4px; border-bottom:1px dotted #111; height:1px; }
 .doc .foot { margin-top:16px; font-size:11px; color:#555; display:flex; justify-content:space-between; }
+.doc .pile { margin:6px 0 12px 12px; page-break-inside:avoid; }
+.doc .pile h3 { margin:0; font-size:17px; font-weight:700; }
+.doc .pile .sub { font-size:12px; color:#555; }
+.doc .pile .sub b { color:#0f766e; }
+.doc .pphotos { display:flex; gap:10px; margin:6px 0 8px; align-items:flex-start; }
+.doc .pphotos figure { margin:0; }
+.doc .pphotos figcaption { font-size:11px; color:#555; margin-bottom:2px; }
+.doc .pphotos img { height:92px; width:auto; max-width:130px; object-fit:cover; border-radius:6px; border:1px solid #ccc; display:block; }
+.doc .trow { display:flex; align-items:flex-start; gap:6px; margin-bottom:4px; }
+.doc .trow .tl { width:34px; font-size:11px; color:#888; padding-top:6px; flex:none; }
+.doc .tgrid { flex:1; display:grid; grid-template-columns:repeat(10,1fr); gap:4px; }
+.doc .cell { text-align:center; padding:3px 0; border-radius:7px; border:1px solid #e0b800; background:#fff3b0; font-weight:600; font-size:12.5px; }
+.doc .cell.out { background:#e3e8ef; border-color:#c7d0dc; color:#8a94a3; text-decoration:line-through; }
+.doc .cell.old { background:#f4f5f7; border-color:#e5e7eb; color:#b8bec9; font-weight:400; }
 @media print {
   html, body { background:#fff !important; }
   main { padding:0 !important; max-width:none !important; }
@@ -42,10 +57,29 @@ const css = `
 export default async function Print({ params, searchParams }: { params: { id: string }; searchParams: { auto?: string } }) {
   const { data: w } = await db()
     .from("withdrawals")
-    .select("*, poles(pole_no,tier,pos,sites(label),pole_sizes(name))")
+    .select("*, poles(pole_no,tier,pos,site_id,sites(label),pole_sizes(name))")
     .eq("id", params.id)
     .single();
   if (!w) return <div className="card">ไม่พบใบเบิกนี้ <a className="text-brand underline" href="/history">กลับประวัติ</a></div>;
+
+  // ผังของแต่ละกองที่แตะในใบนี้ (เสาในใบนี้ = ขีดฆ่า)
+  const siteIds = Array.from(new Set(((w as any).poles || []).map((p: any) => p.site_id))) as string[];
+  const { data: siteRows } = await db().from("sites").select("id,name,zone,pile,label").in("id", siteIds);
+  const phs = await pilePhotos(siteIds);
+  const piles: any[] = [];
+  for (const sid of siteIds) {
+    const site = (siteRows || []).find((x: any) => x.id === sid) as any;
+    const all = await fetchPoles(sid);
+    const byTier = new Map<number, any[]>();
+    for (const x of all) { const t = x.tier ?? 0; if (!byTier.has(t)) byTier.set(t, []); byTier.get(t)!.push(x); }
+    const tiers = Array.from(byTier.keys()).sort((a, b) => (a === 0 ? -1 : b === 0 ? 1 : b - a));
+    piles.push({
+      sid, site, tiers, byTier, ph: phs[sid],
+      total: all.length, avail: all.filter((x: any) => x.status === "available").length,
+      title: [site?.zone, site?.pile].filter(Boolean).join(" / ") || site?.label || "",
+    });
+  }
+  const items: any[] = Array.isArray((w as any).items) ? (w as any).items : [];
 
   const poles = [...((w as any).poles || [])].sort((a: any, b: any) => (a.tier ?? 999) - (b.tier ?? 999) || (a.pos ?? 999) - (b.pos ?? 999));
   const m = new Map<string, { site: string; size: string; nos: string[] }>();
@@ -81,6 +115,34 @@ export default async function Print({ params, searchParams }: { params: { id: st
           </div>
 
           <h2>ข้อมูลงาน</h2>
+          {piles.map((pl) => (
+            <div className="pile" key={pl.sid}>
+              <h3>{pl.title}</h3>
+              <div className="sub">{pl.site?.name ? `${pl.site.name} · ` : ""}คงเหลือ <b>{pl.avail}</b> / {pl.total} ต้น</div>
+              <div className="pphotos">
+                {pl.ph?.full && (
+                  <figure><figcaption>รูปกองเต็ม ({dateTH(new Date(pl.ph.full.at))})</figcaption>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={pl.ph.full.url} alt="รูปกองเต็ม" /></figure>
+                )}
+                {pl.ph?.after && (
+                  <figure><figcaption>รูปหลังขนล่าสุด ({dateTH(new Date(pl.ph.after.at))} · {pl.ph.after.job})</figcaption>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={pl.ph.after.photos[0].url} alt="รูปหลังขนล่าสุด" /></figure>
+                )}
+              </div>
+              {pl.tiers.map((t: number) => (
+                <div className="trow" key={t}>
+                  <div className="tl">{t === 0 ? "ไม่ระบุ" : `ชั้น ${t}`}</div>
+                  <div className="tgrid">
+                    {pl.byTier.get(t)!.map((x: any) => (
+                      <div key={x.id} className={`cell ${x.withdrawal_id === (w as any).id ? "out" : x.status === "available" ? "" : "old"}`}>{x.pole_no}</div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
           <table className="info"><tbody>
             <tr><th>ชื่องาน</th><td>{(w as any).job_name}</td></tr>
             <tr><th>WBS / ใบสั่ง</th><td>{(w as any).wbs || "-"}</td></tr>
@@ -104,6 +166,20 @@ export default async function Print({ params, searchParams }: { params: { id: st
             </tbody>
             <tfoot><tr><td colSpan={3} className="r">รวมทั้งสิ้น</td><td className="c">{total}</td><td>ต้น</td></tr></tfoot>
           </table>
+
+          {items.length > 0 && (
+            <>
+              <h2>อุปกรณ์เสริมที่เบิก</h2>
+              <table>
+                <thead><tr><th style={{ width: "8%" }}>ลำดับ</th><th style={{ width: "22%" }}>รหัส</th><th>รายการ</th><th style={{ width: "10%" }}>จำนวน</th></tr></thead>
+                <tbody>
+                  {items.map((x, i) => (
+                    <tr key={i}><td className="c">{i + 1}</td><td>{x.code}</td><td>{x.name}{x.detail ? ` (${x.detail})` : ""}</td><td className="c">{x.qty}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
 
           <div className="sign">
             <div><div className="line" />({(w as any).responsible})<br />ผู้เบิก<br />วันที่ ........../........../..........</div>

@@ -3,11 +3,23 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, stamp, uploadPhoto, Photo } from "@/lib/client";
 import PhotoPicker from "@/components/PhotoPicker";
-import { useStatus } from "@/lib/status";
+import { useStatus, notify } from "@/lib/status";
+import ItemsPicker from "@/components/ItemsPicker";
+import type { Item } from "@/lib/items";
 
 type P = { id: string; url: string };
 
-export default function HistoryCard({ w, groups, when }: { w: any; groups: { site: string; size: string; nos: string[] }[]; when: string }) {
+async function copyText(text: string, what: string) {
+  try { await navigator.clipboard.writeText(text); }
+  catch {
+    const t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select();
+    try { document.execCommand("copy"); } finally { document.body.removeChild(t); }
+  }
+  notify(`✅ คัดลอก${what}แล้ว`);
+}
+
+export default function HistoryCard({ w, groups, when, accessories = [] }: { w: any; groups: { site: string; size: string; nos: string[] }[]; when: string; accessories?: any[] }) {
+  const [items, setItems] = useState<Item[]>(Array.isArray(w.items) ? w.items : []);
   const router = useRouter();
   const [edit, setEdit] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -35,6 +47,7 @@ export default function HistoryCard({ w, groups, when }: { w: any; groups: { sit
     setEdit(false); setMsg("");
     setF({ job_name: w.job_name || "", wbs: w.wbs || "", network: w.network || "", responsible: w.responsible || "", team: w.team || "" });
     setBefore(w.before_photos || []); setAfter(w.after_photos || []); setNewBefore([]); setNewAfter([]);
+    setItems(Array.isArray(w.items) ? w.items : []);
   }
 
   async function save() {
@@ -57,7 +70,7 @@ export default function HistoryCard({ w, groups, when }: { w: any; groups: { sit
       setMsg("กำลังบันทึก...");
       await api(`/api/withdrawals/${w.id}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...f, before_photos: [...before, ...addB], after_photos: [...after, ...addA] }),
+        body: JSON.stringify({ ...f, before_photos: [...before, ...addB], after_photos: [...after, ...addA], items }),
       });
       setEdit(false); setNewBefore([]); setNewAfter([]);
       router.refresh();
@@ -141,18 +154,42 @@ export default function HistoryCard({ w, groups, when }: { w: any; groups: { sit
       </div>
 
       <div className="space-y-1.5">
+        <div className="flex justify-end">
+          <button type="button" className="btn-ghost !py-1 text-sm" onClick={() => copyText(groups.flatMap((g) => g.nos).join(", "), `เลขเสาทั้งหมด ${total} ต้น`)}>📋 คัดลอกเลขเสาทั้งหมด ({total})</button>
+        </div>
         {groups.map((g) => (
           <div key={g.site + g.size} className="rounded-lg bg-slate-50 p-2">
-            <div className="mb-1 text-sm font-medium">📍 {g.site} · {g.size} <span className="text-slate-400">({g.nos.length} ต้น)</span></div>
+            <div className="mb-1 flex items-center justify-between gap-2 text-sm font-medium">
+              <span>📍 {g.site} · {g.size} <span className="text-slate-400">({g.nos.length} ต้น)</span></span>
+              <button type="button" className="shrink-0 text-xs text-brand underline" onClick={() => copyText(g.nos.join(", "), "เลขเสากองนี้")}>📋 คัดลอก</button>
+            </div>
             <div className="flex flex-wrap gap-1">{g.nos.map((n) => <span key={n} className="chip">{n}</span>)}</div>
           </div>
         ))}
       </div>
 
-      <Photos title="ก่อนขน" list={before} onRemove={edit ? (id) => setBefore(before.filter((p) => p.id !== id)) : undefined} />
-      {edit && <PhotoPicker label="เพิ่มรูปก่อนขน" photos={newBefore} onChange={setNewBefore} />}
-      <Photos title="หลังขน" list={after} onRemove={edit ? (id) => setAfter(after.filter((p) => p.id !== id)) : undefined} />
-      {edit && <PhotoPicker label="เพิ่มรูปหลังขน" photos={newAfter} onChange={setNewAfter} />}
+      {/* อุปกรณ์เสริม */}
+      {!edit && items.length > 0 && (
+        <div className="rounded-lg bg-slate-50 p-2 text-sm">
+          <div className="mb-1 font-medium">🔩 อุปกรณ์เสริม</div>
+          <ul className="space-y-0.5">
+            {items.map((x) => <li key={x.code}><span className="font-mono text-xs text-slate-500">{x.code}</span> {x.name} <b>× {x.qty}</b>{x.detail ? <span className="text-slate-500"> ({x.detail})</span> : null}</li>)}
+          </ul>
+        </div>
+      )}
+      {edit && (
+        <div>
+          <div className="label">🔩 อุปกรณ์เสริม</div>
+          <ItemsPicker accessories={accessories} value={items} onChange={setItems} />
+        </div>
+      )}
+
+      {/* รูปก่อนขน / หลังขน อยู่บรรทัดเดียวกัน */}
+      <div className="flex flex-wrap items-start gap-x-8 gap-y-3">
+        <Photos title="ก่อนขน" list={before} onRemove={edit ? (id) => setBefore(before.filter((p) => p.id !== id)) : undefined} />
+        <Photos title="หลังขน" list={after} onRemove={edit ? (id) => setAfter(after.filter((p) => p.id !== id)) : undefined} />
+      </div>
+      {edit && <div className="grid gap-3 md:grid-cols-2"><PhotoPicker label="เพิ่มรูปก่อนขน" photos={newBefore} onChange={setNewBefore} /><PhotoPicker label="เพิ่มรูปหลังขน" photos={newAfter} onChange={setNewAfter} /></div>}
 
       {edit && (
         <div className="flex gap-2 pt-1">

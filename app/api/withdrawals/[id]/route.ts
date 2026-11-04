@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/supabase";
 import { callGas, esc } from "@/lib/gas";
+import { cleanItems } from "@/lib/items";
 
 // แก้ไขใบเบิก: ข้อมูลงาน + รูปก่อน/หลังขน (เพิ่ม/เอาออก)
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
@@ -19,6 +20,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       if (!Array.isArray(b[k])) return NextResponse.json({ error: `${k} ต้องเป็นรายการ` }, { status: 400 });
       patch[k] = b[k].map((x: any) => ({ id: String(x.id), url: String(x.url) }));
     }
+  }
+  if ("items" in b) {
+    const ci = cleanItems(b.items);
+    if (ci.error) return NextResponse.json({ error: ci.error }, { status: 400 });
+    patch.items = ci.items;
   }
   // งานเสร็จ: ต้องมีเลขใบตัดงาน
   if ("done" in b) {

@@ -15,7 +15,9 @@ const items = [
 function readAreaName() {
   try {
     const m = document.cookie.split("; ").find((c) => c.startsWith("ps_area_name="));
-    return m ? decodeURIComponent(m.split("=")[1]) : "";
+    let v = m ? m.slice(m.indexOf("=") + 1) : "";
+    for (let i = 0; i < 3 && /%[0-9A-Fa-f]{2}/.test(v); i++) v = decodeURIComponent(v); // กันกรณีถูก encode ซ้อน
+    return v;
   } catch { return ""; }
 }
 

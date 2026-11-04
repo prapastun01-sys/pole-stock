@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/supabase";
 import { callGas, esc } from "@/lib/gas";
+import { cleanItems } from "@/lib/items";
 
 export const maxDuration = 30;
 
@@ -12,6 +13,9 @@ export async function POST(req: Request) {
   if (!Array.isArray(b.pole_ids) || b.pole_ids.length === 0)
     return NextResponse.json({ error: "กรุณาเลือกเลขเสาอย่างน้อย 1 ต้น" }, { status: 400 });
 
+  const ci = cleanItems(b.items);
+  if (ci.error) return NextResponse.json({ error: ci.error }, { status: 400 });
+
   const s = db();
   const { data: id, error } = await s.rpc("create_withdrawal", { p: b });
   if (error) {
@@ -20,6 +24,12 @@ export async function POST(req: Request) {
       { error: gone ? "มีเสาบางต้นถูกเบิกไปแล้ว กรุณารีเฟรชแล้วเลือกใหม่" : error.message },
       { status: gone ? 409 : 500 }
     );
+  }
+
+  let itemsSaved = true;
+  if (ci.items.length) {
+    const { error: ie } = await s.from("withdrawals").update({ items: ci.items }).eq("id", id);
+    if (ie) itemsSaved = false; // ใบเบิกถูกสร้างแล้ว แต่บันทึกอุปกรณ์ไม่สำเร็จ (ยังไม่ได้รัน migration_008?)
   }
 
   // แจ้งเตือน Telegram จัดกลุ่มตามกอง+ขนาด (ถ้าล้มเหลว ไม่ทำให้การเบิกล้มเหลว)
@@ -51,12 +61,13 @@ export async function POST(req: Request) {
       `ผู้รับผิดชอบ: ${esc(b.responsible)}\n` +
       `ทีมงาน: ${esc(b.team)}\n` +
       `รวม: <b>${b.pole_ids.length}</b> ต้น จาก ${groups.size} กอง\n\n` +
-      lines.join("\n") + app;
+      lines.join("\n") +
+      (ci.items.length ? `\n\n🔩 <b>อุปกรณ์เสริม</b>\n` + ci.items.map((x) => `• ${esc(x.code)} ${esc(x.name)} × ${x.qty}${x.detail ? ` (${esc(x.detail)})` : ""}`).join("\n") : "") + app;
     const r = await callGas({ action: "notify", text });
     notified = !!r.ok;
   } catch {
     notified = false;
   }
 
-  return NextResponse.json({ ok: true, id, notified });
+  return NextResponse.json({ ok: true, id, notified, itemsSaved });
 }
