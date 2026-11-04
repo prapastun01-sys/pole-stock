@@ -15,7 +15,7 @@ export default async function Piles({ searchParams }: { searchParams: { all?: st
   ]);
   if (error) return <div className="card text-red-600">{error.message}</div>;
 
-  const nameOf = new Map((sites || []).map((s: any) => [s.id, s.name as string]));
+  const nameOf = new Map<string, string>((sites || []).map((s: any) => [s.id as string, s.name as string]));
   type G = { name: string; piles: Set<string>; active: Set<string>; sizes: Map<string, { sort: number; avail: number; total: number }> };
   const groups = new Map<string, G>();
   for (const s of sites || []) if (!groups.has(s.name)) groups.set(s.name, { name: s.name, piles: new Set(), active: new Set(), sizes: new Map() });
