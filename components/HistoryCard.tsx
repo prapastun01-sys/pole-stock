@@ -42,11 +42,13 @@ export default function HistoryCard({ w, groups, when, accessories = [] }: { w: 
   const [after, setAfter] = useState<P[]>(w.after_photos || []);
   const [newBefore, setNewBefore] = useState<Photo[]>([]);
   const [newAfter, setNewAfter] = useState<Photo[]>([]);
+  const [acc, setAcc] = useState<P[]>(w.acc_photos || []);
+  const [newAcc, setNewAcc] = useState<Photo[]>([]);
 
   function cancel() {
     setEdit(false); setMsg("");
     setF({ job_name: w.job_name || "", wbs: w.wbs || "", network: w.network || "", responsible: w.responsible || "", team: w.team || "" });
-    setBefore(w.before_photos || []); setAfter(w.after_photos || []); setNewBefore([]); setNewAfter([]);
+    setBefore(w.before_photos || []); setAfter(w.after_photos || []); setNewBefore([]); setNewAfter([]); setAcc(w.acc_photos || []); setNewAcc([]);
     setItems(Array.isArray(w.items) ? w.items : []);
   }
 
@@ -67,12 +69,13 @@ export default function HistoryCard({ w, groups, when, accessories = [] }: { w: 
       };
       const addB = await up(newBefore, "ก่อนขนเสา", "ก่อนขน");
       const addA = await up(newAfter, "หลังขนเสา", "หลังขน");
+      const addC = await up(newAcc, "หลังขนอุปกรณ์เสริม", "หลังขนอุปกรณ์เสริม");
       setMsg("กำลังบันทึก...");
       await api(`/api/withdrawals/${w.id}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...f, before_photos: [...before, ...addB], after_photos: [...after, ...addA], items }),
+        body: JSON.stringify({ ...f, before_photos: [...before, ...addB], after_photos: [...after, ...addA], acc_photos: [...acc, ...addC], items }),
       });
-      setEdit(false); setNewBefore([]); setNewAfter([]);
+      setEdit(false); setNewBefore([]); setNewAfter([]); setNewAcc([]);
       router.refresh();
       setMsg("✅ บันทึกการแก้ไขแล้ว");
     } catch (e: any) { setMsg("❌ " + e.message); }
@@ -188,8 +191,9 @@ export default function HistoryCard({ w, groups, when, accessories = [] }: { w: 
       <div className="flex flex-wrap items-start gap-x-8 gap-y-3">
         <Photos title="ก่อนขน" list={before} onRemove={edit ? (id) => setBefore(before.filter((p) => p.id !== id)) : undefined} />
         <Photos title="หลังขน" list={after} onRemove={edit ? (id) => setAfter(after.filter((p) => p.id !== id)) : undefined} />
+        <Photos title="หลังขนอุปกรณ์เสริม" list={acc} onRemove={edit ? (id) => setAcc(acc.filter((p) => p.id !== id)) : undefined} />
       </div>
-      {edit && <div className="grid gap-3 md:grid-cols-2"><PhotoPicker label="เพิ่มรูปก่อนขน" photos={newBefore} onChange={setNewBefore} /><PhotoPicker label="เพิ่มรูปหลังขน" photos={newAfter} onChange={setNewAfter} /></div>}
+      {edit && <div className="grid gap-3 md:grid-cols-2"><PhotoPicker label="เพิ่มรูปก่อนขน" photos={newBefore} onChange={setNewBefore} /><PhotoPicker label="เพิ่มรูปหลังขน" photos={newAfter} onChange={setNewAfter} /><PhotoPicker label="เพิ่มรูปหลังขนอุปกรณ์เสริม" photos={newAcc} onChange={setNewAcc} /></div>}
 
       {edit && (
         <div className="flex gap-2 pt-1">

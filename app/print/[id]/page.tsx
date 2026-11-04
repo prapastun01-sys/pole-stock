@@ -98,7 +98,7 @@ export default async function Print({ params, searchParams }: { params: { id: st
   const done = (w as any).done_at ? `งานเสร็จ · เลขใบตัดงาน ${(w as any).cut_no || "-"}` : "อยู่ระหว่างดำเนินการ";
   const now = new Date();
   const org = process.env.ORG_NAME || "";
-  const nb = ((w as any).before_photos || []).length, na = ((w as any).after_photos || []).length;
+  const nb = ((w as any).before_photos || []).length, na = ((w as any).after_photos || []).length, nc = ((w as any).acc_photos || []).length;
 
   return (
     <div>
@@ -151,7 +151,7 @@ export default async function Print({ params, searchParams }: { params: { id: st
             <tr><th>ผู้รับผิดชอบ</th><td>{(w as any).responsible}</td></tr>
             <tr><th>ทีมงาน</th><td>{(w as any).team || "-"}</td></tr>
             <tr><th>สถานะงาน</th><td>{done}</td></tr>
-            <tr><th>รูปประกอบ</th><td>ก่อนขนเสา {nb} รูป · หลังขนเสา {na} รูป (เก็บไว้ในระบบ)</td></tr>
+            <tr><th>รูปประกอบ</th><td>ก่อนขนเสา {nb} รูป · หลังขนเสา {na} รูป{nc > 0 ? ` · หลังขนอุปกรณ์เสริม ${nc} รูป` : ""} (เก็บไว้ในระบบ)</td></tr>
           </tbody></table>
 
           <h2>รายการเสาที่เบิก</h2>

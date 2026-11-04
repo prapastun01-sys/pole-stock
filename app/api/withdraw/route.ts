@@ -16,6 +16,8 @@ export async function POST(req: Request) {
   const ci = cleanItems(b.items);
   if (ci.error) return NextResponse.json({ error: ci.error }, { status: 400 });
 
+  const accPhotos = Array.isArray(b.acc_photos) ? b.acc_photos.map((x: any) => ({ id: String(x.id), url: String(x.url) })) : [];
+
   const s = db();
   const { data: id, error } = await s.rpc("create_withdrawal", { p: b });
   if (error) {
@@ -27,8 +29,8 @@ export async function POST(req: Request) {
   }
 
   let itemsSaved = true;
-  if (ci.items.length) {
-    const { error: ie } = await s.from("withdrawals").update({ items: ci.items }).eq("id", id);
+  if (ci.items.length || accPhotos.length) {
+    const { error: ie } = await s.from("withdrawals").update({ items: ci.items, acc_photos: accPhotos }).eq("id", id);
     if (ie) itemsSaved = false; // ใบเบิกถูกสร้างแล้ว แต่บันทึกอุปกรณ์ไม่สำเร็จ (ยังไม่ได้รัน migration_008?)
   }
 

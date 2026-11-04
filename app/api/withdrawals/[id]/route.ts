@@ -15,7 +15,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
   }
   for (const k of ["wbs", "network", "team"]) if (k in b) patch[k] = String(b[k] || "").trim() || null;
-  for (const k of ["before_photos", "after_photos"]) {
+  for (const k of ["before_photos", "after_photos", "acc_photos"]) {
     if (k in b) {
       if (!Array.isArray(b[k])) return NextResponse.json({ error: `${k} ต้องเป็นรายการ` }, { status: 400 });
       patch[k] = b[k].map((x: any) => ({ id: String(x.id), url: String(x.url) }));

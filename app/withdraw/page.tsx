@@ -29,6 +29,7 @@ export default function Withdraw() {
   const [pasteRow, setPasteRow] = useState("");
   const [before, setBefore] = useState<Photo[]>([]);
   const [after, setAfter] = useState<Photo[]>([]);
+  const [accPhotos, setAccPhotos] = useState<Photo[]>([]);
   const [q, setQ] = useState("");
   const [results, setResults] = useState<any[] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -206,16 +207,17 @@ export default function Withdraw() {
       };
       const before_photos = await up(before, "ก่อนขนเสา", "ก่อนขน");
       const after_photos = await up(after, "หลังขนเสา", "หลังขน");
+      const acc_photos = await up(accPhotos, "หลังขนอุปกรณ์เสริม", "หลังขนอุปกรณ์เสริม");
 
       setMsg("กำลังบันทึกใบเบิก...");
       const r = await api("/api/withdraw", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pole_ids: list.map((p) => p.id), ...f, before_photos, after_photos, items }),
+        body: JSON.stringify({ pole_ids: list.map((p) => p.id), ...f, before_photos, after_photos, acc_photos, items }),
       });
       setDoneId(r.id);
       setMsg("✅ บันทึกใบเบิกเรียบร้อย");
       setDone(`เบิกเสา ${list.length} ต้น จาก ${cart.length} กลุ่ม สำเร็จ${r.notified ? " และแจ้งเตือน Telegram แล้ว" : " (แต่แจ้งเตือน Telegram ไม่สำเร็จ)"}`);
-      setPicked({}); setBefore([]); setAfter([]); setItems([]); setF(emptyForm); setQty(""); setPasteRow("");
+      setPicked({}); setBefore([]); setAfter([]); setAccPhotos([]); setItems([]); setF(emptyForm); setQty(""); setPasteRow("");
       loadPoles(); loadMaster();
     } catch (e: any) { setMsg("❌ " + e.message); }
     setBusy(false);
@@ -421,6 +423,7 @@ export default function Withdraw() {
       <section className="card space-y-4">
         <PhotoPicker label="11) รูปก่อนขนเสา (หลายรูปได้ / บีบ ≤ 1MB อัตโนมัติ)" photos={before} onChange={setBefore} />
         <PhotoPicker label="12) รูปหลังขนเสา (หลายรูปได้ / บีบ ≤ 1MB อัตโนมัติ)" photos={after} onChange={setAfter} />
+        <PhotoPicker label="13) รูปหลังขนอุปกรณ์เสริม (หลายรูปได้ / บีบ ≤ 1MB อัตโนมัติ)" photos={accPhotos} onChange={setAccPhotos} />
       </section>
 
       <button className="btn w-full py-3 text-lg" disabled={busy}>{busy ? "กำลังดำเนินการ..." : `ยืนยันเบิกเสา ${list.length} ต้น`}</button>
