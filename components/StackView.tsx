@@ -18,9 +18,10 @@ export default function StackView({ poles, showSize }: { poles: any[]; showSize?
           <div className="flex flex-wrap gap-1.5">
             {byTier.get(t)!.map((p) => (
               <div key={p.id}
-                title={`${p.pole_sizes?.name || ""} · ${p.status === "available" ? "คงเหลือ" : "เบิกแล้ว: " + (p.withdrawals?.job_name || "")}`}
-                className={`min-w-[3.6rem] rounded-lg border px-2 py-1.5 text-center text-sm ${p.status === "available" ? "border-yellow-400 bg-yellow-100 font-semibold" : "border-slate-300 bg-slate-200 text-slate-400 line-through"}`}>
+                title={`${p.pole_sizes?.name || ""} · ${p.status === "available" ? "คงเหลือ" : "เบิกแล้ว: " + (p.withdrawals?.job_name || "") + (p.withdrawals?.team ? " · ทีม " + p.withdrawals.team : "")}`}
+                className={`relative min-w-[3.6rem] rounded-lg border px-2 py-1.5 text-center text-sm ${p.status !== "available" && p.withdrawals?.team ? "pb-3.5" : ""} ${p.status === "available" ? "border-yellow-400 bg-yellow-100 font-semibold" : "border-slate-300 bg-slate-200 text-slate-400 line-through"}`}>
                 {p.pole_no}
+                {p.status !== "available" && p.withdrawals?.team ? <span className="absolute bottom-0 right-1 max-w-[95%] overflow-hidden whitespace-nowrap text-[9px] font-semibold leading-tight text-teal-700 no-underline">{p.withdrawals.team}</span> : null}
                 {showSize && <div className="text-[10px] font-normal no-underline">{p.pole_sizes?.name}</div>}
                 {p.kind && p.kind !== "new" && <div className={`mt-0.5 rounded px-1 text-[10px] font-normal no-underline ${kindOf(p.kind).cls}`}>{kindOf(p.kind).short}</div>}
               </div>
