@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/supabase";
+import { areaCookie, isAreaId } from "@/lib/area";
 
 export async function POST(req: Request) {
   const b = await req.json();
@@ -9,7 +10,7 @@ export async function POST(req: Request) {
   const num = (v: any) => (v === "" || v == null || isNaN(Number(v)) ? null : Number(v));
   const { data, error } = await db()
     .from("sites")
-    .insert({ name, zone: String(b.zone || "").trim(), pile: String(b.pile || "").trim(), lat: num(b.lat), lng: num(b.lng), note: b.note || null })
+    .insert({ area_id: b.area_id || (isAreaId(areaCookie()) ? areaCookie() : null), name, zone: String(b.zone || "").trim(), pile: String(b.pile || "").trim(), lat: num(b.lat), lng: num(b.lng), note: b.note || null })
     .select()
     .single();
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/supabase";
 import { KIND_VALUES } from "@/lib/kinds";
+import { areaSiteIds } from "@/lib/area";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -23,7 +24,11 @@ export async function GET(req: Request) {
     .order("pole_no")
     .limit(1000);
 
-  if (q) query = query.ilike("pole_no", `%${q.replace(/[%_]/g, "")}%`).limit(50);
+  if (q) {
+    query = query.ilike("pole_no", `%${q.replace(/[%_]/g, "")}%`).limit(50);
+    const ids = await areaSiteIds(); // ค้นเฉพาะในพื้นที่ที่เลือก
+    if (ids) query = query.in("site_id", ids);
+  }
   // site / size รับได้หลายค่า คั่นด้วย ,
   if (site) query = query.in("site_id", site.split(",").filter(Boolean));
   if (size) query = query.in("size_id", size.split(",").filter(Boolean));

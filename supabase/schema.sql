@@ -6,10 +6,19 @@
 
 create extension if not exists "pgcrypto";
 
+-- ---------- 0) พื้นที่ ----------
+create table if not exists public.areas (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null unique,
+  sort_order int  not null default 0,
+  created_at timestamptz not null default now()
+);
+
 -- ---------- 1) จุดกองหมอน ----------
 create table if not exists public.sites (
   id          uuid primary key default gen_random_uuid(),
   name        text not null,                           -- ชื่อจุด
+  area_id     uuid references public.areas(id),     -- พื้นที่ (นครพนม ฯลฯ)
   zone        text not null default '',                -- Zone ต่อท้ายชื่อจุด
   pile        text not null default '',                -- กอง (ถ้าจุดเดียวมีหลายกอง)
   label       text generated always as (
@@ -91,6 +100,17 @@ cross join public.pole_sizes z
 left join public.poles p on p.site_id = s.id and p.size_id = z.id
 group by s.id, s.label, z.id, z.name, z.sort_order;
 
+-- สรุปยอดแยกตามประเภทเสา
+create or replace view public.v_stock_kind
+with (security_invoker = true) as
+select
+  p.site_id, p.size_id, p.kind,
+  count(*)                                         as total,
+  count(*) filter (where p.status = 'available')   as available,
+  count(*) filter (where p.status = 'withdrawn')   as withdrawn
+from public.poles p
+group by p.site_id, p.size_id, p.kind;
+
 -- ---------- 6) ฟังก์ชันเบิกเสาแบบ atomic ----------
 -- ถ้ามีเสาต้นใดถูกเบิกไปแล้ว/ไม่อยู่ในกองนั้น จะ rollback ทั้งใบ (กันสองคนเบิกซ้ำพร้อมกัน)
 create or replace function public.create_withdrawal(p jsonb)
@@ -137,6 +157,7 @@ grant execute on function public.create_withdrawal(jsonb) to service_role;
 -- ---------- 7) ความปลอดภัย (RLS) ----------
 -- เปิด RLS และ "ไม่สร้าง policy" = anon key เข้าถึงข้อมูลไม่ได้เลย
 -- เว็บเข้าถึงผ่าน API ฝั่งเซิร์ฟเวอร์ด้วย service_role (ข้าม RLS) เท่านั้น
+alter table public.areas       enable row level security;
 alter table public.sites       enable row level security;
 alter table public.pole_sizes  enable row level security;
 alter table public.poles       enable row level security;
@@ -149,4 +170,9 @@ insert into public.pole_sizes (name, sort_order) values
   ('12 เมตร',           30),
   ('12 เมตร (อัดแรง)',  40),
   ('14 เมตร',           50)
+on conflict (name) do nothing;
+
+-- ---------- 9) ข้อมูลตั้งต้น: พื้นที่ ----------
+insert into public.areas (name, sort_order) values
+  ('นครพนม', 10), ('ธาตุพนม', 20), ('นาแก', 30), ('บ้านแพง', 40)
 on conflict (name) do nothing;

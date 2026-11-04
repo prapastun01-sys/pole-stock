@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { db } from "@/lib/supabase";
+import { scopedSites } from "@/lib/area";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -9,7 +10,7 @@ export const revalidate = 0;
 export default async function Piles({ searchParams }: { searchParams: { all?: string } }) {
   const showAll = searchParams.all === "1";
   const [{ data: sites, error }, { data: stock }] = await Promise.all([
-    db().from("sites").select("id,name"),
+    scopedSites("id,name"),
     db().from("v_stock").select("site_id,size_name,sort_order,total,available"),
   ]);
   if (error) return <div className="card text-red-600">{error.message}</div>;

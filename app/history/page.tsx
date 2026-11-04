@@ -1,4 +1,5 @@
 import { db } from "@/lib/supabase";
+import { areaSiteIds } from "@/lib/area";
 import HistoryCard from "@/components/HistoryCard";
 
 export const dynamic = "force-dynamic";
@@ -6,11 +7,27 @@ export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 export default async function History() {
-  const { data, error } = await db()
-    .from("withdrawals")
-    .select("*, poles(pole_no,tier,pos,sites(label),pole_sizes(name))")
-    .order("created_at", { ascending: false })
-    .limit(50);
+  const SEL = "*, poles(pole_no,tier,pos,sites(label),pole_sizes(name))";
+  const ids = await areaSiteIds(); // null = ทุกพื้นที่
+  let data: any[] | null = null, error: any = null;
+  if (ids === null) {
+    const r = await db().from("withdrawals").select(SEL).order("created_at", { ascending: false }).limit(50);
+    data = r.data; error = r.error;
+  } else {
+    // ใบเบิกที่มีเสาอยู่ในกองของพื้นที่นี้
+    const wset = new Set<string>();
+    for (let i = 0; i < ids.length && !error; i += 50) {
+      const r = await db().from("poles").select("withdrawal_id").in("site_id", ids.slice(i, i + 50)).not("withdrawal_id", "is", null).limit(5000);
+      if (r.error) error = r.error; else (r.data || []).forEach((x: any) => wset.add(x.withdrawal_id));
+    }
+    const wl = Array.from(wset);
+    const out: any[] = [];
+    for (let i = 0; i < wl.length && !error; i += 60) {
+      const r = await db().from("withdrawals").select(SEL).in("id", wl.slice(i, i + 60));
+      if (r.error) error = r.error; else out.push(...(r.data || []));
+    }
+    data = out.sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at)).slice(0, 50);
+  }
 
   if (error) return <div className="card text-red-600">{error.message}</div>;
 

@@ -34,7 +34,37 @@ export default function Withdraw() {
   const [done, setDone] = useState<string | null>(null);
   const [doneId, setDoneId] = useState<string | null>(null);
 
-  useEffect(() => { api("/api/master").then((j) => { setSites(j.sites); setSizes(j.sizes); }).catch((e) => setMsg("❌ " + e.message)); }, []);
+  const [stock, setStock] = useState<any[]>([]);
+  const [pointName, setPointName] = useState("");
+  const loadMaster = () => api("/api/master").then((j) => { setSites(j.sites); setSizes(j.sizes); setStock(j.stock || []); }).catch((e) => setMsg("❌ " + e.message));
+  useEffect(() => { loadMaster(); /* eslint-disable-next-line */ }, []);
+
+  // ยอดใช้ได้ต่อกอง (กรองตามขนาดที่ติ๊ก)
+  const availOf = (siteId: string) => stock.filter((r) => r.site_id === siteId && (sizeIds.length === 0 || sizeIds.includes(r.size_id))).reduce((a, r) => a + Number(r.available), 0);
+  const pileSizes = useMemo(() => {
+    const m = new Map<string, { name: string; avail: number }[]>();
+    for (const r of stock) {
+      if (Number(r.available) <= 0) continue;
+      const z = sizes.find((x) => x.id === r.size_id);
+      if (!m.has(r.site_id)) m.set(r.site_id, []);
+      m.get(r.site_id)!.push({ name: z?.name || "-", avail: Number(r.available) });
+    }
+    return m;
+  }, [stock, sizes]);
+  // รายการจุดกองหมอน (เฉพาะจุดที่ยังมีเสา)
+  const points = useMemo(() => {
+    const m = new Map<string, { name: string; avail: number; piles: number }>();
+    for (const s of sites) {
+      const a = stock.filter((r) => r.site_id === s.id).reduce((x, r) => x + Number(r.available), 0);
+      if (a <= 0) continue;
+      const c = m.get(s.name) || { name: s.name, avail: 0, piles: 0 };
+      c.avail += a; c.piles++; m.set(s.name, c);
+    }
+    return Array.from(m.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [sites, stock]);
+  const pileName = (s: any) => [s.zone && `Zone ${s.zone}`, s.pile].filter(Boolean).join(" / ") || "กองหลัก";
+  const pilesOfPoint = sites.filter((s) => s.name === pointName && availOf(s.id) > 0);
+  const otherTicked = sites.filter((s) => siteIds.includes(s.id) && s.name !== pointName);
 
   const loadPoles = () => {
     if (siteIds.length === 0) { setPoles([]); return; }
@@ -74,6 +104,7 @@ export default function Withdraw() {
     setPicked((old) => ({ ...old, [p.id]: toPicked(p) }));
     setQ(""); setResults(null);
     if (!siteIds.includes(p.site_id)) setSiteIds((l) => [...l, p.site_id]);
+    const nm = p.sites?.name || sites.find((x) => x.id === p.site_id)?.name; if (nm) setPointName(nm);
     if (sizeIds.length && !sizeIds.includes(p.size_id)) setSizeIds((l) => [...l, p.size_id]);
   }
 
@@ -180,7 +211,7 @@ export default function Withdraw() {
       setMsg("✅ บันทึกใบเบิกเรียบร้อย");
       setDone(`เบิกเสา ${list.length} ต้น จาก ${cart.length} กลุ่ม สำเร็จ${r.notified ? " และแจ้งเตือน Telegram แล้ว" : " (แต่แจ้งเตือน Telegram ไม่สำเร็จ)"}`);
       setPicked({}); setBefore([]); setAfter([]); setF(emptyForm); setQty(""); setPasteRow("");
-      loadPoles();
+      loadPoles(); loadMaster();
     } catch (e: any) { setMsg("❌ " + e.message); }
     setBusy(false);
   }
@@ -233,19 +264,42 @@ export default function Withdraw() {
 
       <section className="card space-y-3">
         <div>
-          <label className="label">1) ติ๊กเลือกกอง <span className="text-slate-400">(ติ๊กตั้งแต่ 2 กองขึ้นไปได้)</span></label>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {sites.map((s) => (
-              <label key={s.id} className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5 ${siteIds.includes(s.id) ? "border-brand bg-brand-light font-semibold" : "border-slate-200"}`}>
-                <input type="checkbox" className="h-5 w-5 accent-teal-700" checked={siteIds.includes(s.id)} onChange={() => tick(siteIds, setSiteIds, s.id)} />
-                {s.label}
-              </label>
-            ))}
-            {sites.length === 0 && <p className="text-sm text-slate-400">ยังไม่มีจุดกอง</p>}
-          </div>
+          <label className="label">1) เลือกจุดกองหมอน</label>
+          <select className="input" value={pointName} onChange={(e) => setPointName(e.target.value)}>
+            <option value="">— เลือกจุดกองหมอน —</option>
+            {points.map((p) => <option key={p.name} value={p.name}>{p.name} · ใช้ได้ {p.avail} ต้น ({p.piles} กอง)</option>)}
+          </select>
+          {points.length === 0 && <p className="mt-1 text-sm text-orange-600">ไม่มีจุดกองที่มีเสาคงเหลือในพื้นที่นี้</p>}
         </div>
         <div>
-          <label className="label">2) ขนาดเสา <span className="text-slate-400">(ไม่ติ๊ก = ทุกขนาด)</span></label>
+          <label className="label">2) ติ๊กเลือกกองเสา <span className="text-slate-400">(ติ๊กตั้งแต่ 2 กองขึ้นไปได้ · กองที่เสาหมดแล้วจะไม่แสดง)</span></label>
+          {!pointName ? <p className="rounded-xl bg-slate-50 p-3 text-sm text-slate-500">เลือกจุดกองหมอนก่อน</p> : (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {pilesOfPoint.map((s) => {
+                const on = siteIds.includes(s.id);
+                return (
+                  <label key={s.id} className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5 ${on ? "border-brand bg-brand-light" : "border-slate-200"}`}>
+                    <input type="checkbox" className="h-5 w-5 accent-teal-700" checked={on} onChange={() => tick(siteIds, setSiteIds, s.id)} />
+                    <span className="flex-1">
+                      <span className="font-semibold">{pileName(s)}</span>
+                      <span className="block text-xs text-slate-500">{(pileSizes.get(s.id) || []).map((z) => `${z.name}: ${z.avail}`).join(" · ")}</span>
+                    </span>
+                    <span className="text-right"><b className="text-xl text-emerald-600">{availOf(s.id)}</b><span className="block text-[10px] text-slate-400">ใช้ได้ (ต้น)</span></span>
+                  </label>
+                );
+              })}
+              {pilesOfPoint.length === 0 && <p className="text-sm text-orange-600">จุดนี้ไม่มีกองที่มีเสาคงเหลือ{sizeIds.length ? "ในขนาดที่เลือก" : ""}</p>}
+            </div>
+          )}
+          {otherTicked.length > 0 && (
+            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
+              <span className="text-slate-500">กองที่ติ๊กไว้จากจุดอื่น:</span>
+              {otherTicked.map((s) => <span key={s.id} className="chip gap-1.5">{s.label}<button type="button" aria-label="เอากองนี้ออก" onClick={() => tick(siteIds, setSiteIds, s.id)}>×</button></span>)}
+            </div>
+          )}
+        </div>
+        <div>
+          <label className="label">3) ขนาดเสา <span className="text-slate-400">(ไม่ติ๊ก = ทุกขนาด)</span></label>
           <div className="flex flex-wrap gap-2">
             {sizes.map((z) => (
               <label key={z.id} className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 ${sizeIds.includes(z.id) ? "border-brand bg-brand-light font-semibold" : "border-slate-200"}`}>
@@ -300,7 +354,7 @@ export default function Withdraw() {
       )}
 
       <section className="card space-y-3">
-        <span className="label !mb-0">3) ติ๊กเลขเสา <span className="text-slate-400">(ชั้นบนอยู่บน · ซ้าย → ขวา)</span></span>
+        <span className="label !mb-0">4) ติ๊กเลขเสา <span className="text-slate-400">(ชั้นบนอยู่บน · ซ้าย → ขวา)</span></span>
         {siteIds.length === 0 ? <p className="rounded-xl bg-slate-50 p-3 text-sm text-slate-500">ติ๊กเลือกกองก่อน</p>
           : groupsView.length === 0 ? <p className="rounded-xl bg-orange-50 p-3 text-sm text-orange-700">ไม่มีเสาคงเหลือในกอง/ขนาดที่เลือก</p>
           : groupsView.map((g) => (
@@ -345,18 +399,18 @@ export default function Withdraw() {
       </section>
 
       <section className="card space-y-3">
-        <div><label className="label">4) ชื่องาน *</label><input className="input" required value={f.job_name} onChange={(e) => setF({ ...f, job_name: e.target.value })} /></div>
+        <div><label className="label">5) ชื่องาน *</label><input className="input" required value={f.job_name} onChange={(e) => setF({ ...f, job_name: e.target.value })} /></div>
         <div className="grid gap-3 md:grid-cols-2">
-          <div><label className="label">5) WBS / ใบสั่ง</label><input className="input" value={f.wbs} onChange={(e) => setF({ ...f, wbs: e.target.value })} /></div>
-          <div><label className="label">6) โครงข่าย</label><input className="input" value={f.network} onChange={(e) => setF({ ...f, network: e.target.value })} /></div>
-          <div><label className="label">7) ผู้รับผิดชอบ *</label><input className="input" required value={f.responsible} onChange={(e) => setF({ ...f, responsible: e.target.value })} /></div>
-          <div><label className="label">8) ทีมงาน</label><input className="input" value={f.team} onChange={(e) => setF({ ...f, team: e.target.value })} /></div>
+          <div><label className="label">6) WBS / ใบสั่ง</label><input className="input" value={f.wbs} onChange={(e) => setF({ ...f, wbs: e.target.value })} /></div>
+          <div><label className="label">7) โครงข่าย</label><input className="input" value={f.network} onChange={(e) => setF({ ...f, network: e.target.value })} /></div>
+          <div><label className="label">8) ผู้รับผิดชอบ *</label><input className="input" required value={f.responsible} onChange={(e) => setF({ ...f, responsible: e.target.value })} /></div>
+          <div><label className="label">9) ทีมงาน</label><input className="input" value={f.team} onChange={(e) => setF({ ...f, team: e.target.value })} /></div>
         </div>
       </section>
 
       <section className="card space-y-4">
-        <PhotoPicker label="9) รูปก่อนขนเสา (หลายรูปได้ / บีบ ≤ 1MB อัตโนมัติ)" photos={before} onChange={setBefore} />
-        <PhotoPicker label="10) รูปหลังขนเสา (หลายรูปได้ / บีบ ≤ 1MB อัตโนมัติ)" photos={after} onChange={setAfter} />
+        <PhotoPicker label="10) รูปก่อนขนเสา (หลายรูปได้ / บีบ ≤ 1MB อัตโนมัติ)" photos={before} onChange={setBefore} />
+        <PhotoPicker label="11) รูปหลังขนเสา (หลายรูปได้ / บีบ ≤ 1MB อัตโนมัติ)" photos={after} onChange={setAfter} />
       </section>
 
       <button className="btn w-full py-3 text-lg" disabled={busy}>{busy ? "กำลังดำเนินการ..." : `ยืนยันเบิกเสา ${list.length} ต้น`}</button>

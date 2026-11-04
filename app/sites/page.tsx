@@ -6,15 +6,19 @@ import { useStatus } from "@/lib/status";
 export default function Sites() {
   const [sites, setSites] = useState<any[]>([]);
   const [sizes, setSizes] = useState<any[]>([]);
-  const [f, setF] = useState({ name: "", zone: "", pile: "", lat: "", lng: "", note: "" });
+  const [areas, setAreas] = useState<any[]>([]);
+  const [curArea, setCurArea] = useState("");
+  const [f, setF] = useState({ name: "", zone: "", pile: "", lat: "", lng: "", note: "", area_id: "" });
   const [size, setSize] = useState("");
   const [msg, setMsg] = useStatus();
   const [busy, setBusy] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [d, setD] = useState({ name: "", zone: "", pile: "", lat: "", lng: "", note: "" });
+  const [d, setD] = useState<any>({ name: "", zone: "", pile: "", lat: "", lng: "", note: "", area_id: "" });
 
-  const load = () => api("/api/master").then((j) => { setSites(j.sites); setSizes(j.sizes); }).catch((e) => setMsg(e.message));
+  const load = () => api("/api/master").then((j) => { setSites(j.sites); setSizes(j.sizes); setAreas(j.areas || []); setCurArea(j.area?.id || ""); }).catch((e) => setMsg(e.message));
   useEffect(() => { load(); }, []);
+  const names = Array.from(new Set(sites.map((x) => x.name as string))).sort((a, b) => a.localeCompare(b));
+  const pileName = (x: any) => [x.zone && `Zone ${x.zone}`, x.pile].filter(Boolean).join(" / ") || "กองหลัก";
 
   function locate() {
     if (!navigator.geolocation) return alert("อุปกรณ์ไม่รองรับ GPS");
@@ -35,8 +39,8 @@ export default function Sites() {
     e.preventDefault();
     setBusy(true); setMsg("กำลังบันทึก...");
     try {
-      await api("/api/sites", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(f) });
-      setF({ name: "", zone: "", pile: "", lat: "", lng: "", note: "" });
+      await api("/api/sites", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...f, area_id: f.area_id || curArea }) });
+      setF({ name: "", zone: "", pile: "", lat: "", lng: "", note: "", area_id: "" });
       setMsg("✅ เพิ่มจุดกองหมอนแล้ว");
       load();
     } catch (e: any) { setMsg("❌ " + e.message); }
@@ -45,7 +49,7 @@ export default function Sites() {
 
   function startEdit(s: any) {
     setEditId(s.id);
-    setD({ name: s.name || "", zone: s.zone || "", pile: s.pile || "", lat: s.lat ?? "", lng: s.lng ?? "", note: s.note || "" } as any);
+    setD({ name: s.name || "", zone: s.zone || "", pile: s.pile || "", lat: s.lat ?? "", lng: s.lng ?? "", note: s.note || "", area_id: s.area_id || "" });
     setMsg("");
   }
   async function saveEdit() {
@@ -73,7 +77,8 @@ export default function Sites() {
 
       <form onSubmit={addSite} className="card space-y-3">
         <h2 className="font-semibold">เพิ่มจุดกองหมอน</h2>
-        <div><label className="label">ชื่อจุด *</label><input className="input" required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="เช่น ที่เช่า / อ.เมือง" /></div>
+        <div><label className="label">ชื่อจุด *</label><input className="input" required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="เช่น ที่เช่า / อ.เมือง" list="site-names" /><datalist id="site-names">{names.map((n) => <option key={n} value={n} />)}</datalist></div>
+        <div><label className="label">พื้นที่</label><select className="input" value={f.area_id || curArea} onChange={(e) => setF({ ...f, area_id: e.target.value })}><option value="">ยังไม่ระบุ</option>{areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></div>
         <div><label className="label">Zone</label><input className="input" value={f.zone} onChange={(e) => setF({ ...f, zone: e.target.value })} placeholder="เช่น โซน A, Zone 1 (เว้นว่างได้)" /></div>
         <div><label className="label">กอง (ถ้าจุดเดียวมีหลายกอง)</label><input className="input" value={f.pile} onChange={(e) => setF({ ...f, pile: e.target.value })} placeholder="เช่น กอง 1, กอง 2 (เว้นว่างได้)" /></div>
         <div>
@@ -91,41 +96,49 @@ export default function Sites() {
       </form>
 
       <section className="card">
-        <h2 className="mb-2 font-semibold">รายการจุดกอง ({sites.length})</h2>
-        <ul className="divide-y">
-          {sites.map((s) => (
-            <li key={s.id} className="py-2">
-              {editId === s.id ? (
-                <div className="space-y-2 rounded-xl bg-slate-50 p-3">
-                  <div><label className="label">ชื่อจุด *</label><input className="input" value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} /></div>
-                  <div><label className="label">Zone</label><input className="input" value={d.zone} onChange={(e) => setD({ ...d, zone: e.target.value })} placeholder="เว้นว่างได้" /></div>
-                  <div><label className="label">กอง</label><input className="input" value={d.pile} onChange={(e) => setD({ ...d, pile: e.target.value })} placeholder="เว้นว่างได้" /></div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div><label className="label">Latitude</label><input className="input" inputMode="decimal" value={d.lat} onChange={(e) => setD({ ...d, lat: e.target.value })} /></div>
-                    <div><label className="label">Longitude</label><input className="input" inputMode="decimal" value={d.lng} onChange={(e) => setD({ ...d, lng: e.target.value })} /></div>
+        <h2 className="mb-2 font-semibold">จุดกองใหญ่ ({names.length}) · {sites.length} กอง</h2>
+        <div className="space-y-2">
+          {names.map((n) => (
+            <details key={n} className="rounded-xl border border-slate-200" open={sites.some((s) => s.name === n && s.id === editId)}>
+              <summary className="cursor-pointer select-none px-3 py-2.5 font-medium">📍 {n} <span className="text-sm font-normal text-slate-500">({sites.filter((s) => s.name === n).length} กอง)</span></summary>
+              <ul className="divide-y border-t px-3">
+          {sites.filter((s) => s.name === n).map((s) => (
+              <li key={s.id} className="py-2">
+                {editId === s.id ? (
+                  <div className="space-y-2 rounded-xl bg-slate-50 p-3">
+                    <div><label className="label">ชื่อจุด *</label><input className="input" value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} /></div>
+                    <div><label className="label">พื้นที่</label><select className="input" value={d.area_id} onChange={(e) => setD({ ...d, area_id: e.target.value })}><option value="">ยังไม่ระบุ</option>{areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></div>
+                    <div><label className="label">Zone</label><input className="input" value={d.zone} onChange={(e) => setD({ ...d, zone: e.target.value })} placeholder="เว้นว่างได้" /></div>
+                    <div><label className="label">กอง</label><input className="input" value={d.pile} onChange={(e) => setD({ ...d, pile: e.target.value })} placeholder="เว้นว่างได้" /></div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div><label className="label">Latitude</label><input className="input" inputMode="decimal" value={d.lat} onChange={(e) => setD({ ...d, lat: e.target.value })} /></div>
+                      <div><label className="label">Longitude</label><input className="input" inputMode="decimal" value={d.lng} onChange={(e) => setD({ ...d, lng: e.target.value })} /></div>
+                    </div>
+                    <div><label className="label">หมายเหตุ</label><input className="input" value={d.note} onChange={(e) => setD({ ...d, note: e.target.value })} /></div>
+                    <div className="flex gap-2">
+                      <button type="button" className="btn" disabled={busy} onClick={saveEdit}>บันทึก</button>
+                      <button type="button" className="btn-ghost" onClick={() => setEditId(null)}>ยกเลิก</button>
+                    </div>
                   </div>
-                  <div><label className="label">หมายเหตุ</label><input className="input" value={d.note} onChange={(e) => setD({ ...d, note: e.target.value })} /></div>
-                  <div className="flex gap-2">
-                    <button type="button" className="btn" disabled={busy} onClick={saveEdit}>บันทึก</button>
-                    <button type="button" className="btn-ghost" onClick={() => setEditId(null)}>ยกเลิก</button>
+                ) : (
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <div className="font-medium">{pileName(s)}</div>
+                      <div className="text-xs text-slate-500">{s.lat != null ? `${s.lat}, ${s.lng}` : "ไม่มีพิกัด"}{s.note ? ` · ${s.note}` : ""}</div>
+                    </div>
+                    <div className="flex shrink-0 gap-1.5">
+                      {s.lat != null && <a className="btn-ghost !py-1.5 text-sm" target="_blank" href={`https://maps.google.com/?q=${s.lat},${s.lng}`}>🗺</a>}
+                      <button type="button" className="btn-ghost !py-1.5 text-sm" onClick={() => startEdit(s)}>✏️ แก้ไข</button>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <div className="font-medium">{s.label}</div>
-                    <div className="text-xs text-slate-500">{s.lat != null ? `${s.lat}, ${s.lng}` : "ไม่มีพิกัด"}{s.note ? ` · ${s.note}` : ""}</div>
-                  </div>
-                  <div className="flex shrink-0 gap-1.5">
-                    {s.lat != null && <a className="btn-ghost !py-1.5 text-sm" target="_blank" href={`https://maps.google.com/?q=${s.lat},${s.lng}`}>🗺</a>}
-                    <button type="button" className="btn-ghost !py-1.5 text-sm" onClick={() => startEdit(s)}>✏️ แก้ไข</button>
-                  </div>
-                </div>
-              )}
-            </li>
+                )}
+              </li>
+            ))}
+                </ul>
+            </details>
           ))}
-          {sites.length === 0 && <li className="py-3 text-slate-500">ยังไม่มีข้อมูล</li>}
-        </ul>
+          {sites.length === 0 && <p className="py-3 text-slate-500">ยังไม่มีข้อมูล</p>}
+        </div>
       </section>
 
       <section className="card space-y-3">

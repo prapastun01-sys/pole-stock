@@ -10,7 +10,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const { data, error } = await db()
     .from("sites")
-    .update({ name, zone: String(b.zone || "").trim(), pile: String(b.pile || "").trim(), lat: num(b.lat), lng: num(b.lng), note: b.note || null })
+    .update({ area_id: b.area_id || null, name, zone: String(b.zone || "").trim(), pile: String(b.pile || "").trim(), lat: num(b.lat), lng: num(b.lng), note: b.note || null })
     .eq("id", params.id)
     .select()
     .single();

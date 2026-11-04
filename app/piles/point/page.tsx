@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { db } from "@/lib/supabase";
+import { scopedSites } from "@/lib/area";
 import { fetchPoles, pilePhotos } from "@/lib/pile";
 import PilePhotosView from "@/components/PilePhotosView";
 import StackView from "@/components/StackView";
@@ -15,7 +16,7 @@ export default async function Point({ searchParams }: { searchParams: { name?: s
   const showAll = searchParams.all === "1";
   const s = db();
 
-  const { data: sites } = await s.from("sites").select("id,name,zone,pile,label,lat,lng,note").eq("name", name).order("pile");
+  const { data: sites } = await scopedSites("id,name,zone,pile,label,lat,lng,note").eq("name", name).order("pile");
   if (!sites || sites.length === 0)
     return <div className="card">ไม่พบจุดกองหมอนนี้ <Link className="text-brand underline" href="/piles">กลับ</Link></div>;
 

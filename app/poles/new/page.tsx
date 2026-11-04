@@ -1,4 +1,5 @@
 "use client";
+import SitePicker from "@/components/SitePicker";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { api, stamp, uploadPhoto, Photo } from "@/lib/client";
@@ -109,10 +110,7 @@ export default function NewPoles() {
       <div className="card space-y-3">
         <div>
           <label className="label">1) จุดกองหมอน *</label>
-          <select className="input" value={siteId} onChange={(e) => setSiteId(e.target.value)}>
-            <option value="">— เลือกจุดกอง —</option>
-            {sites.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
-          </select>
+          <SitePicker sites={sites} value={siteId} onChange={setSiteId} />
           {site && <p className="mt-1 text-xs text-slate-500">พิกัด: {site.lat != null ? `${site.lat}, ${site.lng}` : "ยังไม่ได้ระบุ"} · <Link className="text-brand underline" href={`/piles/${site.id}`}>ดูประวัติกองนี้</Link></p>}
           {sites.length === 0 && <p className="mt-1 text-sm text-orange-600">ยังไม่มีจุดกอง <Link className="underline" href="/sites">เพิ่มที่นี่</Link></p>}
           {siteId && Object.keys(existing).length > 0 && (
