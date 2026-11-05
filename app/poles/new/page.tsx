@@ -34,6 +34,8 @@ type TierBox = { tier: number; text: string };
 
 export default function NewPoles() {
   const [sites, setSites] = useState<any[]>([]);
+  const [stock, setStock] = useState<any[]>([]);
+  const [showAllPiles, setShowAllPiles] = useState(false);
   const [sizes, setSizes] = useState<any[]>([]);
   const [siteId, setSiteId] = useState("");
   const [sizeId, setSizeId] = useState("");
@@ -47,7 +49,7 @@ export default function NewPoles() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useStatus();
 
-  useEffect(() => { api("/api/master").then((j) => { setSites(j.sites); setSizes(j.sizes); }).catch((e) => setMsg("❌ " + e.message)); }, []);
+  useEffect(() => { api("/api/master").then((j) => { setSites(j.sites); setSizes(j.sizes); setStock(j.stock || []); }).catch((e) => setMsg("❌ " + e.message)); }, []);
 
   // โหลดชั้นที่มีอยู่แล้วของกองนี้ เพื่อเสนอชั้นถัดไปให้
   const loadExisting = async (id: string) => {
@@ -76,6 +78,13 @@ export default function NewPoles() {
   const total = all.length;
 
   const site = sites.find((s) => s.id === siteId);
+  // ซ่อนกองที่เสาหมดแล้ว (มีเสาเคยลงไว้ แต่ไม่เหลือแล้ว) — กองใหม่ที่ยังไม่มีเสาและกองที่เลือกอยู่ยังแสดง
+  const depleted = new Set(sites.filter((x) => {
+    const rows = stock.filter((r) => r.site_id === x.id);
+    return rows.length > 0 && rows.reduce((a, r) => a + Number(r.total), 0) > 0 && rows.reduce((a, r) => a + Number(r.available), 0) === 0;
+  }).map((x) => x.id));
+  const pickable = showAllPiles ? sites : sites.filter((x) => !depleted.has(x.id) || x.id === siteId);
+  const hiddenCount = showAllPiles ? 0 : depleted.size - (depleted.has(siteId) ? 1 : 0);
   const size = sizes.find((s) => s.id === sizeId);
   const setBox = (i: number, patch: Partial<TierBox>) => setBoxes((l) => l.map((b, k) => (k === i ? { ...b, ...patch } : b)));
 
@@ -110,7 +119,13 @@ export default function NewPoles() {
       <div className="card space-y-3">
         <div>
           <label className="label">1) จุดกองหมอน *</label>
-          <SitePicker sites={sites} value={siteId} onChange={setSiteId} />
+          <SitePicker sites={pickable} value={siteId} onChange={setSiteId} />
+          {hiddenCount > 0 && (
+            <label className="mt-1.5 flex items-center gap-2 text-xs text-slate-500">
+              <input type="checkbox" className="h-4 w-4 accent-teal-700" checked={showAllPiles} onChange={(e) => setShowAllPiles(e.target.checked)} />
+              แสดงกองที่เสาหมดแล้วด้วย ({hiddenCount} กอง ซ่อนอยู่)
+            </label>
+          )}
           {site && <p className="mt-1 text-xs text-slate-500">พิกัด: {site.lat != null ? `${site.lat}, ${site.lng}` : "ยังไม่ได้ระบุ"} · <Link className="text-brand underline" href={`/piles/${site.id}`}>ดูประวัติกองนี้</Link></p>}
           {sites.length === 0 && <p className="mt-1 text-sm text-orange-600">ยังไม่มีจุดกอง <Link className="underline" href="/sites">เพิ่มที่นี่</Link></p>}
           {siteId && Object.keys(existing).length > 0 && (
@@ -199,7 +214,6 @@ export default function NewPoles() {
       </div>
 
       <button className="btn w-full py-3 text-lg" onClick={save} disabled={busy}>{busy ? "กำลังบันทึก..." : `บันทึกเสา ${total} ต้น`}</button>
-      {msg && <p className="text-center text-sm">{msg}</p>}
     </div>
   );
 }

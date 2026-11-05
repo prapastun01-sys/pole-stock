@@ -433,7 +433,6 @@ export default function Withdraw() {
       </section>
 
       <button className="btn w-full py-3 text-lg" disabled={busy}>{busy ? "กำลังดำเนินการ..." : list.length === 0 && items.length > 0 ? `ยืนยันเบิกอุปกรณ์เสริม ${items.length} รายการ (ไม่เบิกเสา)` : `ยืนยันเบิกเสา ${list.length} ต้น`}</button>
-      {msg && <p className="text-center text-sm">{msg}</p>}
     </form>
   );
 }

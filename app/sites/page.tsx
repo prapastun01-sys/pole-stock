@@ -21,10 +21,10 @@ export default function Sites() {
   const pileName = (x: any) => [x.zone && `Zone ${x.zone}`, x.pile].filter(Boolean).join(" / ") || "กองหลัก";
 
   function locate() {
-    if (!navigator.geolocation) return alert("อุปกรณ์ไม่รองรับ GPS");
+    if (!navigator.geolocation) return setMsg("❌ อุปกรณ์ไม่รองรับ GPS");
     navigator.geolocation.getCurrentPosition(
       (p) => setF((x) => ({ ...x, lat: p.coords.latitude.toFixed(6), lng: p.coords.longitude.toFixed(6) })),
-      () => alert("ดึงตำแหน่งไม่ได้ กรุณาอนุญาตการเข้าถึงตำแหน่ง"),
+      () => setMsg("❌ ดึงตำแหน่งไม่ได้ กรุณาอนุญาตการเข้าถึงตำแหน่ง"),
       { enableHighAccuracy: true, timeout: 15000 }
     );
   }
@@ -92,7 +92,6 @@ export default function Sites() {
         <button type="button" className="btn-ghost" onClick={locate}>📍 ใช้ตำแหน่งปัจจุบัน (GPS)</button>
         <div><label className="label">หมายเหตุ</label><input className="input" value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} /></div>
         <button className="btn w-full" disabled={busy}>บันทึกจุดกอง</button>
-        {msg && <p className="text-sm">{msg}</p>}
       </form>
 
       <section className="card">

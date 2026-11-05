@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import { compressImage, Photo } from "@/lib/client";
+import { notify } from "@/lib/status";
 
 export default function PhotoPicker({
   label, photos, onChange, single,
@@ -19,7 +20,7 @@ export default function PhotoPicker({
       }
       onChange(single ? out.slice(0, 1) : [...photos, ...out]);
     } catch {
-      alert("อ่านรูปไม่ได้ กรุณาลองรูปอื่น");
+      notify("❌ อ่านรูปไม่ได้ กรุณาลองรูปอื่น");
     } finally {
       setBusy(false);
       if (ref.current) ref.current.value = "";

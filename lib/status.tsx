@@ -7,6 +7,16 @@ let state: S = { kind: "idle", text: "" };
 let timer: any;
 const subs = new Set<() => void>();
 
+// กล่องยืนยันกลางจอ (แทน window.confirm)
+type C = { text: string; ok: string; danger: boolean; resolve: (v: boolean) => void } | null;
+let confirmState: C = null;
+export function confirmDialog(text: string, opts?: { ok?: string; danger?: boolean }): Promise<boolean> {
+  return new Promise((resolve) => {
+    confirmState = { text, ok: opts?.ok || "ยืนยัน", danger: !!opts?.danger, resolve };
+    subs.forEach((f) => f());
+  });
+}
+
 function set(s: S) {
   state = s;
   clearTimeout(timer);
@@ -34,13 +44,29 @@ export function useStatus(): [string, (m: string) => void] {
 
 export function Toaster() {
   const [s, setS] = useState<S>(state);
+  const [cf, setCf] = useState<C>(null);
   useEffect(() => {
-    const f = () => setS({ ...state });
+    const f = () => { setS({ ...state }); setCf(confirmState); };
     subs.add(f);
     f();
     return () => { subs.delete(f); };
   }, []);
 
+  const answer = (v: boolean) => { const c = confirmState; confirmState = null; setCf(null); c?.resolve(v); };
+  if (cf)
+    return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 p-5 backdrop-blur-[2px]" role="alertdialog" aria-label="ยืนยัน" onClick={() => answer(false)}>
+        <div className="w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full text-3xl ${cf.danger ? "bg-red-100" : "bg-amber-100"}`}>{cf.danger ? "🗑" : "❓"}</div>
+          <h2 className="mt-4 text-lg font-bold text-slate-800">โปรดยืนยัน</h2>
+          <p className="mt-1.5 whitespace-pre-line break-words text-slate-600">{cf.text}</p>
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            <button type="button" className="rounded-xl border border-slate-300 px-4 py-2.5 font-medium text-slate-700 hover:bg-slate-50" onClick={() => answer(false)}>ยกเลิก</button>
+            <button type="button" autoFocus className={`rounded-xl px-4 py-2.5 font-semibold text-white ${cf.danger ? "bg-red-600 hover:bg-red-700" : "bg-brand hover:bg-brand-dark"}`} onClick={() => answer(true)}>{cf.ok}</button>
+          </div>
+        </div>
+      </div>
+    );
   if (s.kind === "idle") return null;
   const close = () => set({ kind: "idle", text: "" });
 

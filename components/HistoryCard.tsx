@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, stamp, uploadPhoto, Photo } from "@/lib/client";
 import PhotoPicker from "@/components/PhotoPicker";
-import { useStatus, notify } from "@/lib/status";
+import { useStatus, notify, confirmDialog } from "@/lib/status";
 import ItemsPicker from "@/components/ItemsPicker";
 import type { Item } from "@/lib/items";
 
@@ -86,7 +86,7 @@ export default function HistoryCard({ w, groups, when, accessories = [] }: { w: 
 
   async function remove() {
     const n = groups.reduce((a, g) => a + g.nos.length, 0);
-    if (!confirm(`ลบใบเบิก "${w.job_name}" ?\n\n${n ? `เสา ${n} ต้นในใบนี้จะกลับไปเป็น "คงเหลือ" ในกองเดิม` : "ใบนี้เบิกเฉพาะอุปกรณ์เสริม"}\n(รูปใน Google Drive จะไม่ถูกลบ) การลบย้อนกลับไม่ได้`)) return;
+    if (!(await confirmDialog(`ลบใบเบิก "${w.job_name}" ?\n\n${n ? `เสา ${n} ต้นในใบนี้จะกลับไปเป็น "คงเหลือ" ในกองเดิม` : "ใบนี้เบิกเฉพาะอุปกรณ์เสริม"}\n(รูปใน Google Drive จะไม่ถูกลบ) การลบย้อนกลับไม่ได้`, { ok: "ลบใบเบิก", danger: true }))) return;
     setBusy(true); setMsg("กำลังลบใบเบิกและคืนเสาเข้ากอง...");
     try {
       await api(`/api/withdrawals/${w.id}`, { method: "DELETE" });
@@ -142,7 +142,7 @@ export default function HistoryCard({ w, groups, when, accessories = [] }: { w: 
             <span className="text-slate-500">{new Date(w.done_at).toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", dateStyle: "medium" })}</span>
             <span>· เลขใบตัดงาน: <b>{w.cut_no}</b></span>
             <button type="button" className="ml-auto text-brand underline" onClick={() => setDoneOpen(!doneOpen)}>แก้เลขใบตัดงาน</button>
-            <button type="button" className="text-red-600 underline" disabled={busy} onClick={() => { if (confirm("ยกเลิกสถานะงานเสร็จ?")) patchDone({ done: false }); }}>ยกเลิกสถานะ</button>
+            <button type="button" className="text-red-600 underline" disabled={busy} onClick={async () => { if (await confirmDialog("ยกเลิกสถานะงานเสร็จ?", { ok: "ยกเลิกสถานะ" })) patchDone({ done: false }); }}>ยกเลิกสถานะ</button>
           </div>
         ) : !doneOpen ? (
           <button type="button" className="btn !py-1.5" onClick={() => setDoneOpen(true)}>✅ งานเสร็จ</button>
@@ -204,7 +204,6 @@ export default function HistoryCard({ w, groups, when, accessories = [] }: { w: 
           <button className="btn-ghost" disabled={busy} onClick={cancel}>ยกเลิก</button>
         </div>
       )}
-      {msg && <p className="text-sm">{msg}</p>}
     </article>
   );
 }
