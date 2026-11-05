@@ -132,5 +132,6 @@ npm run dev                  # http://localhost:3000
 | `migration_008_accessories.sql` | อุปกรณ์เสริม (Anchor/Crossarm/Beam) ที่เบิกพร้อมเสา |
 | `migration_009_acc_photos.sql` | รูปหลังขนอุปกรณ์เสริม |
 | `migration_010_move_date.sql` | วันขนเสา + ปฏิทิน |
+| `migration_011_pole_no_per_pile.sql` | เลขเสาซ้ำข้ามกองได้ ห้ามซ้ำในกองเดียวกัน |
 
 (ติดตั้งใหม่ทั้งระบบ: รัน `schema.sql` ไฟล์เดียวพอ เพราะรวมทุกอย่างไว้แล้ว)

@@ -83,9 +83,9 @@ export async function POST(req: Request) {
   const { error } = await s.from("poles").insert(rows);
   if (error) {
     if (error.code === "23505") {
-      const { data } = await s.from("poles").select("pole_no").in("pole_no", rows.map((r) => r.pole_no)).limit(20);
+      const { data } = await s.from("poles").select("pole_no").eq("site_id", b.site_id).in("pole_no", rows.map((r) => r.pole_no)).limit(20);
       const dups = (data || []).map((d) => d.pole_no).join(", ");
-      return NextResponse.json({ error: `เลขเสาซ้ำกับที่มีอยู่แล้ว: ${dups}` }, { status: 409 });
+      return NextResponse.json({ error: `เลขเสาซ้ำกับที่มีอยู่แล้วในกองนี้: ${dups}${dups ? "" : " (ถ้ายังซ้ำกับกองอื่น ให้รัน migration_011_pole_no_per_pile.sql ใน Supabase)"}` }, { status: 409 });
     }
     if (error.message.includes("tier") || error.message.includes("pos")) {
       return NextResponse.json({ error: "ฐานข้อมูลยังไม่ได้อัปเดต: กรุณารัน migration_003_stack_layout.sql ใน Supabase" }, { status: 500 });

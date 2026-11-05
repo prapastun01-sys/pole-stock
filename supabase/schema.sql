@@ -62,7 +62,7 @@ create table if not exists public.withdrawals (
 -- ---------- 4) เสาแต่ละต้น ----------
 create table if not exists public.poles (
   id            uuid primary key default gen_random_uuid(),
-  pole_no       text not null unique,                  -- เลขเสา เช่น 4201
+  pole_no       text not null,                         -- เลขเสา เช่น 4201
   layer         text,                                  -- (เก่า) ไม่ใช้แล้ว
   tier          int,                                   -- ชั้น (1 = ล่างสุด)
   pos           int,                                   -- ลำดับในชั้น นับจากซ้ายไปขวา
@@ -189,3 +189,6 @@ alter table public.withdrawals add column if not exists acc_photos jsonb not nul
 
 -- migration 010: วันขนเสา
 alter table public.withdrawals add column if not exists move_date date;
+
+-- migration 011: เลขเสาไม่ซ้ำภายในกองเดียวกัน (ข้ามกองซ้ำได้)
+create unique index if not exists poles_site_pole_no_uniq on public.poles (site_id, pole_no);
