@@ -26,3 +26,12 @@ export async function areaSiteIds(): Promise<string[] | null> {
   const { data } = await scopedSites("id");
   return (data || []).map((r: any) => r.id);
 }
+
+// ใบเบิกที่ไม่มีเสา (เบิกเฉพาะอุปกรณ์): อยู่ในพื้นที่ที่เลือกหรือไม่
+export function poleFreeInScope(w: { pole_free?: boolean; area_id?: string | null }): boolean {
+  if (!w.pole_free) return false;
+  const a = areaCookie();
+  if (!a || a === "all") return true;
+  if (a === "none") return !w.area_id;
+  return w.area_id === a;
+}

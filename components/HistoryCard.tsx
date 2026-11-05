@@ -86,7 +86,7 @@ export default function HistoryCard({ w, groups, when, accessories = [] }: { w: 
 
   async function remove() {
     const n = groups.reduce((a, g) => a + g.nos.length, 0);
-    if (!confirm(`ลบใบเบิก "${w.job_name}" ?\n\nเสา ${n} ต้นในใบนี้จะกลับไปเป็น "คงเหลือ" ในกองเดิม\n(รูปใน Google Drive จะไม่ถูกลบ) การลบย้อนกลับไม่ได้`)) return;
+    if (!confirm(`ลบใบเบิก "${w.job_name}" ?\n\n${n ? `เสา ${n} ต้นในใบนี้จะกลับไปเป็น "คงเหลือ" ในกองเดิม` : "ใบนี้เบิกเฉพาะอุปกรณ์เสริม"}\n(รูปใน Google Drive จะไม่ถูกลบ) การลบย้อนกลับไม่ได้`)) return;
     setBusy(true); setMsg("กำลังลบใบเบิกและคืนเสาเข้ากอง...");
     try {
       await api(`/api/withdrawals/${w.id}`, { method: "DELETE" });
@@ -107,7 +107,7 @@ export default function HistoryCard({ w, groups, when, accessories = [] }: { w: 
         </div>
         <div className="flex items-center gap-2">
           {w.done_at && <span className="chip !bg-emerald-100 !text-emerald-700">✅ งานเสร็จ</span>}
-          <span className="chip">{total} ต้น · {groups.length} กอง</span>
+          <span className="chip">{total > 0 ? `${total} ต้น · ${groups.length} กอง` : "เฉพาะอุปกรณ์เสริม"}</span>
           {!edit && (
             <>
               <a className="btn-ghost !py-1 text-sm" href={`/print/${w.id}`} target="_blank" rel="noreferrer">📄 ใบเบิก PDF</a>
@@ -160,9 +160,9 @@ export default function HistoryCard({ w, groups, when, accessories = [] }: { w: 
       </div>
 
       <div className="space-y-1.5">
-        <div className="flex justify-end">
+        {total > 0 && <div className="flex justify-end">
           <button type="button" className="btn-ghost !py-1 text-sm" onClick={() => copyText(groups.flatMap((g) => g.nos).join(", "), `เลขเสาทั้งหมด ${total} ต้น`)}>📋 คัดลอกเลขเสาทั้งหมด ({total})</button>
-        </div>
+        </div>}
         {groups.map((g) => (
           <div key={g.site + g.size} className="rounded-lg bg-slate-50 p-2">
             <div className="mb-1 flex items-center justify-between gap-2 text-sm font-medium">

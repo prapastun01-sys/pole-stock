@@ -192,7 +192,7 @@ export default function Withdraw() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setMsg("");
-    if (list.length === 0) return setMsg("❌ กรุณาเลือกเลขเสาอย่างน้อย 1 ต้น");
+    if (list.length === 0 && items.length === 0) return setMsg("❌ กรุณาเลือกเลขเสาหรืออุปกรณ์เสริมอย่างน้อย 1 รายการ");
     if (REQUIRE_PHOTOS && (before.length === 0 || after.length === 0)) return setMsg("❌ กรุณาแนบรูปก่อนขนและหลังขนอย่างน้อยอย่างละ 1 รูป");
     setBusy(true);
     try {
@@ -218,7 +218,7 @@ export default function Withdraw() {
       setDoneId(r.id);
       setMsg("✅ บันทึกใบเบิกเรียบร้อย");
       if (r.itemsSaved === false) notify("⚠️ บันทึกใบเบิกแล้ว แต่บันทึกวันขนเสา/อุปกรณ์ไม่สำเร็จ — ตรวจว่ารัน migration_008, 009, 010 แล้ว");
-      setDone(`เบิกเสา ${list.length} ต้น จาก ${cart.length} กลุ่ม สำเร็จ${r.notified ? " และแจ้งเตือน Telegram แล้ว" : " (แต่แจ้งเตือน Telegram ไม่สำเร็จ)"}`);
+      setDone(`${list.length ? `เบิกเสา ${list.length} ต้น จาก ${cart.length} กลุ่ม` : `เบิกอุปกรณ์เสริม ${items.length} รายการ`} สำเร็จ${r.notified ? " และแจ้งเตือน Telegram แล้ว" : " (แต่แจ้งเตือน Telegram ไม่สำเร็จ)"}`);
       setPicked({}); setBefore([]); setAfter([]); setAccPhotos([]); setItems([]); setMoveDate(todayBKK()); setF(emptyForm); setQty(""); setPasteRow("");
       loadPoles(); loadMaster();
     } catch (e: any) { setMsg("❌ " + e.message); }
@@ -432,7 +432,7 @@ export default function Withdraw() {
         <PhotoPicker label="13) รูปหลังขนอุปกรณ์เสริม (หลายรูปได้ / บีบ ≤ 1MB อัตโนมัติ)" photos={accPhotos} onChange={setAccPhotos} />
       </section>
 
-      <button className="btn w-full py-3 text-lg" disabled={busy}>{busy ? "กำลังดำเนินการ..." : `ยืนยันเบิกเสา ${list.length} ต้น`}</button>
+      <button className="btn w-full py-3 text-lg" disabled={busy}>{busy ? "กำลังดำเนินการ..." : list.length === 0 && items.length > 0 ? `ยืนยันเบิกอุปกรณ์เสริม ${items.length} รายการ (ไม่เบิกเสา)` : `ยืนยันเบิกเสา ${list.length} ต้น`}</button>
       {msg && <p className="text-center text-sm">{msg}</p>}
     </form>
   );

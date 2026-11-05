@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { db } from "@/lib/supabase";
-import { areaSiteIds } from "@/lib/area";
+import { areaSiteIds, poleFreeInScope } from "@/lib/area";
 import HistoryCard from "@/components/HistoryCard";
 
 export const dynamic = "force-dynamic";
@@ -19,11 +19,12 @@ export default async function History({ searchParams }: { searchParams: SP }) {
   // 1) รายการใบเบิกแบบเบา ๆ (ใช้กรอง/ค้นหา/แบ่งหน้า)
   const lean: any[] = [];
   for (let from = 0; ; from += 1000) {
-    const { data, error } = await s.from("withdrawals")
-      .select("id,created_at,done_at,job_name,wbs,network,team,responsible,cut_no")
-      .order("created_at", { ascending: false }).range(from, from + 999);
+    const COLS = "id,created_at,done_at,job_name,wbs,network,team,responsible,cut_no";
+    const run = (c: string) => s.from("withdrawals").select(c).order("created_at", { ascending: false }).range(from, from + 999);
+    let { data, error } = await run(COLS + ",pole_free,area_id");
+    if (error && /pole_free|area_id/.test(error.message)) ({ data, error } = await run(COLS)); // ยังไม่ได้รัน migration_012
     if (error) return <div className="card text-red-600">{error.message}</div>;
-    lean.push(...(data || []));
+    lean.push(...((data || []) as any[]));
     if ((data || []).length < 1000) break;
   }
 
@@ -36,7 +37,7 @@ export default async function History({ searchParams }: { searchParams: SP }) {
       const { data } = await s.from("poles").select("withdrawal_id").in("site_id", ids.slice(i, i + 50)).not("withdrawal_id", "is", null).limit(10000);
       (data || []).forEach((x: any) => wset.add(x.withdrawal_id));
     }
-    rows = rows.filter((w) => wset.has(w.id));
+    rows = rows.filter((w) => wset.has(w.id) || poleFreeInScope(w));
   }
 
   // 3) ค้นหา: WBS / โครงข่าย / ทีมงาน / ผู้รับผิดชอบ / ชื่องาน / เลขใบตัดงาน / เลขเสา

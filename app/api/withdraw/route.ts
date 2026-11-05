@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/supabase";
 import { callGas, esc } from "@/lib/gas";
 import { cleanItems, isYmd, todayBKK } from "@/lib/items";
+import { areaCookie, isAreaId } from "@/lib/area";
 
 export const maxDuration = 30;
 
@@ -10,16 +11,30 @@ export async function POST(req: Request) {
   const b = await req.json();
   for (const k of ["job_name", "responsible"])
     if (!String(b[k] || "").trim()) return NextResponse.json({ error: `กรุณากรอก ${k === "job_name" ? "ชื่องาน" : "ผู้รับผิดชอบ"}` }, { status: 400 });
-  if (!Array.isArray(b.pole_ids) || b.pole_ids.length === 0)
-    return NextResponse.json({ error: "กรุณาเลือกเลขเสาอย่างน้อย 1 ต้น" }, { status: 400 });
-
   const ci = cleanItems(b.items);
   if (ci.error) return NextResponse.json({ error: ci.error }, { status: 400 });
+
+  const poleIds: string[] = Array.isArray(b.pole_ids) ? b.pole_ids : [];
+  if (poleIds.length === 0 && ci.items.length === 0)
+    return NextResponse.json({ error: "กรุณาเลือกเสาหรืออุปกรณ์เสริมอย่างน้อย 1 รายการ" }, { status: 400 });
 
   const accPhotos = Array.isArray(b.acc_photos) ? b.acc_photos.map((x: any) => ({ id: String(x.id), url: String(x.url) })) : [];
 
   const s = db();
-  const { data: id, error } = await s.rpc("create_withdrawal", { p: b });
+  let id: any, error: any;
+  if (poleIds.length > 0) {
+    ({ data: id, error } = await s.rpc("create_withdrawal", { p: b }));
+  } else {
+    // เบิกเฉพาะอุปกรณ์เสริม (ไม่มีเสา) — ต้องรัน migration_012
+    const ac = areaCookie();
+    const ins = await s.from("withdrawals").insert({
+      job_name: String(b.job_name).trim(), wbs: b.wbs || null, network: b.network || null, responsible: String(b.responsible).trim(), team: b.team || null,
+      before_photos: b.before_photos || [], after_photos: b.after_photos || [],
+      pole_free: true, area_id: isAreaId(ac) ? ac : null,
+    }).select("id").single();
+    id = ins.data?.id; error = ins.error;
+    if (error && /pole_free|area_id/.test(error.message)) error = { message: "ฐานข้อมูลยังไม่ได้อัปเดต: กรุณารัน migration_012_items_only.sql ใน Supabase" };
+  }
   if (error) {
     const gone = error.message.includes("POLE_NOT_AVAILABLE");
     return NextResponse.json(
@@ -64,7 +79,7 @@ export async function POST(req: Request) {
       `โครงข่าย: ${esc(b.network)}\n` +
       `ผู้รับผิดชอบ: ${esc(b.responsible)}\n` +
       `ทีมงาน: ${esc(b.team)}\n` +
-      `รวม: <b>${b.pole_ids.length}</b> ต้น จาก ${groups.size} กอง\n\n` +
+      (poleIds.length ? `รวม: <b>${poleIds.length}</b> ต้น จาก ${groups.size} กอง\n\n` : `เบิกเฉพาะอุปกรณ์เสริม (ไม่มีเสา)\n\n`) +
       lines.join("\n") +
       (ci.items.length ? `\n\n🔩 <b>อุปกรณ์เสริม</b>\n` + ci.items.map((x) => `• ${esc(x.code)} ${esc(x.name)} × ${x.qty}${x.detail ? ` (${esc(x.detail)})` : ""}`).join("\n") : "") + app;
     const r = await callGas({ action: "notify", text });

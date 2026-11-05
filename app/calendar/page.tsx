@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { db } from "@/lib/supabase";
-import { areaSiteIds } from "@/lib/area";
+import { areaSiteIds, poleFreeInScope } from "@/lib/area";
 import { todayBKK, unitOf } from "@/lib/items";
 
 export const dynamic = "force-dynamic";
@@ -24,9 +24,11 @@ export default async function Calendar({ searchParams }: { searchParams: { m?: s
   const startDow = new Date(Y, M - 1, 1).getDay();
   const sel = /^\d{4}-\d{2}-\d{2}$/.test(searchParams.d || "") && searchParams.d!.startsWith(mm) ? searchParams.d! : (today.startsWith(mm) ? today : "");
 
-  const { data, error } = await db().from("withdrawals")
-    .select("id,job_name,team,responsible,move_date,items,poles(site_id,pole_sizes(name))")
+  const q = (cols: string) => db().from("withdrawals").select(cols)
     .gte("move_date", first).lte("move_date", last).order("created_at", { ascending: true });
+  const BASE = "id,job_name,team,responsible,move_date,items,poles(site_id,pole_sizes(name))";
+  let { data, error } = await q(BASE + ",pole_free,area_id");
+  if (error && /pole_free|area_id/.test(error.message)) ({ data, error } = await q(BASE)); // ยังไม่ได้รัน migration_012
   if (error) return <div className="card text-red-600">{error.message}<br />ต้องรัน <code>migration_010_move_date.sql</code> ใน Supabase ก่อน</div>;
 
   // กรองตามพื้นที่: นับเฉพาะเสาในกองของพื้นที่ที่เลือก
@@ -34,7 +36,7 @@ export default async function Calendar({ searchParams }: { searchParams: { m?: s
   const set = ids ? new Set(ids) : null;
   const ws: W[] = ((data || []) as any[])
     .map((w) => ({ ...w, poles: set ? w.poles.filter((p: any) => set.has(p.site_id)) : w.poles }))
-    .filter((w) => w.poles.length > 0);
+    .filter((w) => !set || w.poles.length > 0 || poleFreeInScope(w));
 
   const byDay = new Map<string, W[]>();
   for (const w of ws) { if (!byDay.has(w.move_date)) byDay.set(w.move_date, []); byDay.get(w.move_date)!.push(w); }

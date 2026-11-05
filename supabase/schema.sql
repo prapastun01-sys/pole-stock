@@ -192,3 +192,7 @@ alter table public.withdrawals add column if not exists move_date date;
 
 -- migration 011: เลขเสาไม่ซ้ำภายในกองเดียวกัน (ข้ามกองซ้ำได้)
 create unique index if not exists poles_site_pole_no_uniq on public.poles (site_id, pole_no);
+
+-- migration 012: ใบเบิกเฉพาะอุปกรณ์เสริม
+alter table public.withdrawals add column if not exists pole_free boolean not null default false;
+alter table public.withdrawals add column if not exists area_id uuid references public.areas(id);

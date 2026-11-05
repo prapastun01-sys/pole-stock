@@ -155,6 +155,8 @@ export default async function Print({ params, searchParams }: { params: { id: st
             <tr><th>รูปประกอบ</th><td>ก่อนขนเสา {nb} รูป · หลังขนเสา {na} รูป{nc > 0 ? ` · หลังขนอุปกรณ์เสริม ${nc} รูป` : ""} (เก็บไว้ในระบบ)</td></tr>
           </tbody></table>
 
+          {groups.length > 0 && (
+            <>
           <h2>รายการเสาที่เบิก</h2>
           <table>
             <thead><tr><th style={{ width: "8%" }}>ลำดับ</th><th style={{ width: "27%" }}>จุดกองหมอน / กอง</th><th style={{ width: "14%" }}>ขนาดเสา</th><th style={{ width: "10%" }}>จำนวน</th><th>เลขเสา</th></tr></thead>
@@ -168,6 +170,8 @@ export default async function Print({ params, searchParams }: { params: { id: st
             </tbody>
             <tfoot><tr><td colSpan={3} className="r">รวมทั้งสิ้น</td><td className="c">{total}</td><td>ต้น</td></tr></tfoot>
           </table>
+            </>
+          )}
 
           {items.length > 0 && (
             <>
