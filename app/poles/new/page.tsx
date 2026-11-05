@@ -78,13 +78,10 @@ export default function NewPoles() {
   const total = all.length;
 
   const site = sites.find((s) => s.id === siteId);
-  // ซ่อนกองที่เสาหมดแล้ว (มีเสาเคยลงไว้ แต่ไม่เหลือแล้ว) — กองใหม่ที่ยังไม่มีเสาและกองที่เลือกอยู่ยังแสดง
-  const depleted = new Set(sites.filter((x) => {
-    const rows = stock.filter((r) => r.site_id === x.id);
-    return rows.length > 0 && rows.reduce((a, r) => a + Number(r.total), 0) > 0 && rows.reduce((a, r) => a + Number(r.available), 0) === 0;
-  }).map((x) => x.id));
-  const pickable = showAllPiles ? sites : sites.filter((x) => !depleted.has(x.id) || x.id === siteId);
-  const hiddenCount = showAllPiles ? 0 : depleted.size - (depleted.has(siteId) ? 1 : 0);
+  // แสดงเฉพาะกองที่ "ยังไม่ได้ลงเลขเสา" (กองที่ลงแล้วซ่อนไว้) — กองที่เลือกอยู่ยังแสดง
+  const filled = new Set(sites.filter((x) => stock.some((r) => r.site_id === x.id && Number(r.total) > 0)).map((x) => x.id));
+  const pickable = showAllPiles ? sites : sites.filter((x) => !filled.has(x.id) || x.id === siteId);
+  const hiddenCount = showAllPiles ? 0 : filled.size - (filled.has(siteId) ? 1 : 0);
   const size = sizes.find((s) => s.id === sizeId);
   const setBox = (i: number, patch: Partial<TierBox>) => setBoxes((l) => l.map((b, k) => (k === i ? { ...b, ...patch } : b)));
 
@@ -123,7 +120,7 @@ export default function NewPoles() {
           {hiddenCount > 0 && (
             <label className="mt-1.5 flex items-center gap-2 text-xs text-slate-500">
               <input type="checkbox" className="h-4 w-4 accent-teal-700" checked={showAllPiles} onChange={(e) => setShowAllPiles(e.target.checked)} />
-              แสดงกองที่เสาหมดแล้วด้วย ({hiddenCount} กอง ซ่อนอยู่)
+              แสดงกองที่ลงเลขเสาแล้วด้วย ({hiddenCount} กอง ซ่อนอยู่ — ใช้เมื่อจะเพิ่มเสาเข้ากองเดิม)
             </label>
           )}
           {site && <p className="mt-1 text-xs text-slate-500">พิกัด: {site.lat != null ? `${site.lat}, ${site.lng}` : "ยังไม่ได้ระบุ"} · <Link className="text-brand underline" href={`/piles/${site.id}`}>ดูประวัติกองนี้</Link></p>}
