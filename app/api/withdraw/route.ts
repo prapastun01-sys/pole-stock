@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/supabase";
 import { callGas, esc } from "@/lib/gas";
-import { cleanItems } from "@/lib/items";
+import { cleanItems, isYmd, todayBKK } from "@/lib/items";
 
 export const maxDuration = 30;
 
@@ -29,9 +29,11 @@ export async function POST(req: Request) {
   }
 
   let itemsSaved = true;
-  if (ci.items.length || accPhotos.length) {
-    const { error: ie } = await s.from("withdrawals").update({ items: ci.items, acc_photos: accPhotos }).eq("id", id);
-    if (ie) itemsSaved = false; // ใบเบิกถูกสร้างแล้ว แต่บันทึกอุปกรณ์ไม่สำเร็จ (ยังไม่ได้รัน migration_008?)
+  {
+    const upd: Record<string, any> = { move_date: isYmd(b.move_date) ? b.move_date : todayBKK() };
+    if (ci.items.length || accPhotos.length) { upd.items = ci.items; upd.acc_photos = accPhotos; }
+    const { error: ie } = await s.from("withdrawals").update(upd).eq("id", id);
+    if (ie) itemsSaved = false; // ใบเบิกถูกสร้างแล้ว แต่บันทึกวันขนเสา/อุปกรณ์ไม่สำเร็จ (ยังไม่ได้รัน migration_008-010?)
   }
 
   // แจ้งเตือน Telegram จัดกลุ่มตามกอง+ขนาด (ถ้าล้มเหลว ไม่ทำให้การเบิกล้มเหลว)

@@ -9,6 +9,7 @@ const items = [
   { href: "/withdraw", label: "เบิกเสา", icon: "📦" },
   { href: "/piles", label: "ผังกอง", icon: "🧱" },
   { href: "/history", label: "ประวัติ", icon: "🧾" },
+  { href: "/calendar", label: "ปฏิทิน", icon: "📅" },
   { href: "/sites", label: "จุดกอง", icon: "📍" },
 ];
 
@@ -56,7 +57,7 @@ export default function Nav() {
         <a href="/" className="font-bold text-brand">ระบบเบิกเสา</a>
         {areaChip}
       </div>
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-7 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
         {items.map((i) => (
           <Link key={i.href} href={i.href}
             className={`flex flex-col items-center py-2 text-[11px] ${active(i.href) ? "font-bold text-brand" : "text-slate-500"}`}>

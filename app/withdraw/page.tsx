@@ -3,9 +3,9 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import { api, stamp, uploadPhoto, Photo } from "@/lib/client";
 import PhotoPicker from "@/components/PhotoPicker";
 import ItemsPicker from "@/components/ItemsPicker";
-import type { Item } from "@/lib/items";
+import { todayBKK, type Item } from "@/lib/items";
 import { kindOf } from "@/lib/kinds";
-import { useStatus } from "@/lib/status";
+import { useStatus, notify } from "@/lib/status";
 
 const REQUIRE_PHOTOS = false; // รูปก่อน/หลังขน ไม่บังคับ (ตั้งเป็น true ถ้าต้องการบังคับแนบ)
 
@@ -29,6 +29,7 @@ export default function Withdraw() {
   const [pasteRow, setPasteRow] = useState("");
   const [before, setBefore] = useState<Photo[]>([]);
   const [after, setAfter] = useState<Photo[]>([]);
+  const [moveDate, setMoveDate] = useState(todayBKK());
   const [accPhotos, setAccPhotos] = useState<Photo[]>([]);
   const [q, setQ] = useState("");
   const [results, setResults] = useState<any[] | null>(null);
@@ -212,12 +213,13 @@ export default function Withdraw() {
       setMsg("กำลังบันทึกใบเบิก...");
       const r = await api("/api/withdraw", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pole_ids: list.map((p) => p.id), ...f, before_photos, after_photos, acc_photos, items }),
+        body: JSON.stringify({ pole_ids: list.map((p) => p.id), ...f, before_photos, after_photos, acc_photos, items, move_date: moveDate }),
       });
       setDoneId(r.id);
       setMsg("✅ บันทึกใบเบิกเรียบร้อย");
+      if (r.itemsSaved === false) notify("⚠️ บันทึกใบเบิกแล้ว แต่บันทึกวันขนเสา/อุปกรณ์ไม่สำเร็จ — ตรวจว่ารัน migration_008, 009, 010 แล้ว");
       setDone(`เบิกเสา ${list.length} ต้น จาก ${cart.length} กลุ่ม สำเร็จ${r.notified ? " และแจ้งเตือน Telegram แล้ว" : " (แต่แจ้งเตือน Telegram ไม่สำเร็จ)"}`);
-      setPicked({}); setBefore([]); setAfter([]); setAccPhotos([]); setItems([]); setF(emptyForm); setQty(""); setPasteRow("");
+      setPicked({}); setBefore([]); setAfter([]); setAccPhotos([]); setItems([]); setMoveDate(todayBKK()); setF(emptyForm); setQty(""); setPasteRow("");
       loadPoles(); loadMaster();
     } catch (e: any) { setMsg("❌ " + e.message); }
     setBusy(false);
@@ -406,6 +408,10 @@ export default function Withdraw() {
       </section>
 
       <section className="card space-y-3">
+        <div>
+          <label className="label">วันขนเสา * <span className="text-slate-400">(เลือกจากปฏิทิน หรือพิมพ์เองได้)</span></label>
+          <input className="input !w-auto" type="date" required value={moveDate} onChange={(e) => setMoveDate(e.target.value)} />
+        </div>
         <div><label className="label">5) ชื่องาน *</label><input className="input" required value={f.job_name} onChange={(e) => setF({ ...f, job_name: e.target.value })} /></div>
         <div className="grid gap-3 md:grid-cols-2">
           <div><label className="label">6) WBS / ใบสั่ง</label><input className="input" value={f.wbs} onChange={(e) => setF({ ...f, wbs: e.target.value })} /></div>

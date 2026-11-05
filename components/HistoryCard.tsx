@@ -42,13 +42,15 @@ export default function HistoryCard({ w, groups, when, accessories = [] }: { w: 
   const [after, setAfter] = useState<P[]>(w.after_photos || []);
   const [newBefore, setNewBefore] = useState<Photo[]>([]);
   const [newAfter, setNewAfter] = useState<Photo[]>([]);
+  const mdOrig = w.move_date || new Date(w.created_at).toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
+  const [moveDate, setMoveDate] = useState<string>(mdOrig);
   const [acc, setAcc] = useState<P[]>(w.acc_photos || []);
   const [newAcc, setNewAcc] = useState<Photo[]>([]);
 
   function cancel() {
     setEdit(false); setMsg("");
     setF({ job_name: w.job_name || "", wbs: w.wbs || "", network: w.network || "", responsible: w.responsible || "", team: w.team || "" });
-    setBefore(w.before_photos || []); setAfter(w.after_photos || []); setNewBefore([]); setNewAfter([]); setAcc(w.acc_photos || []); setNewAcc([]);
+    setBefore(w.before_photos || []); setAfter(w.after_photos || []); setNewBefore([]); setNewAfter([]); setAcc(w.acc_photos || []); setNewAcc([]); setMoveDate(mdOrig);
     setItems(Array.isArray(w.items) ? w.items : []);
   }
 
@@ -73,7 +75,7 @@ export default function HistoryCard({ w, groups, when, accessories = [] }: { w: 
       setMsg("กำลังบันทึก...");
       await api(`/api/withdrawals/${w.id}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...f, before_photos: [...before, ...addB], after_photos: [...after, ...addA], acc_photos: [...acc, ...addC], items }),
+        body: JSON.stringify({ ...f, before_photos: [...before, ...addB], after_photos: [...after, ...addA], acc_photos: [...acc, ...addC], items, move_date: moveDate }),
       });
       setEdit(false); setNewBefore([]); setNewAfter([]); setNewAcc([]);
       router.refresh();
@@ -119,7 +121,7 @@ export default function HistoryCard({ w, groups, when, accessories = [] }: { w: 
       {!edit ? (
         <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm md:grid-cols-3">
           <Item k="WBS/ใบสั่ง" v={w.wbs} /><Item k="โครงข่าย" v={w.network} />
-          <Item k="ผู้รับผิดชอบ" v={w.responsible} /><Item k="ทีมงาน" v={w.team} />
+          <Item k="วันขนเสา" v={new Date(mdOrig + "T00:00:00").toLocaleDateString("th-TH", { dateStyle: "medium" })} /><Item k="ผู้รับผิดชอบ" v={w.responsible} /><Item k="ทีมงาน" v={w.team} />
         </dl>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
@@ -128,6 +130,7 @@ export default function HistoryCard({ w, groups, when, accessories = [] }: { w: 
           <Field label="WBS / ใบสั่ง" v={f.wbs} on={(v) => setF({ ...f, wbs: v })} />
           <Field label="โครงข่าย" v={f.network} on={(v) => setF({ ...f, network: v })} />
           <Field label="ทีมงาน" v={f.team} on={(v) => setF({ ...f, team: v })} />
+          <div><label className="label">วันขนเสา</label><input className="input" type="date" value={moveDate} onChange={(e) => setMoveDate(e.target.value)} /></div>
         </div>
       )}
 

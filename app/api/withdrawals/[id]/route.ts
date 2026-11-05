@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/supabase";
 import { callGas, esc } from "@/lib/gas";
-import { cleanItems } from "@/lib/items";
+import { cleanItems, isYmd } from "@/lib/items";
 
 // แก้ไขใบเบิก: ข้อมูลงาน + รูปก่อน/หลังขน (เพิ่ม/เอาออก)
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
@@ -20,6 +20,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       if (!Array.isArray(b[k])) return NextResponse.json({ error: `${k} ต้องเป็นรายการ` }, { status: 400 });
       patch[k] = b[k].map((x: any) => ({ id: String(x.id), url: String(x.url) }));
     }
+  }
+  if ("move_date" in b) {
+    if (!isYmd(b.move_date)) return NextResponse.json({ error: "วันขนเสาไม่ถูกต้อง" }, { status: 400 });
+    patch.move_date = b.move_date;
   }
   if ("items" in b) {
     const ci = cleanItems(b.items);

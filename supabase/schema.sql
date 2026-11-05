@@ -186,3 +186,6 @@ alter table public.accessories enable row level security;
 alter table public.withdrawals add column if not exists items jsonb not null default '[]'::jsonb;
 -- (ข้อมูลตั้งต้น 11 รายการอยู่ใน migration_008_accessories.sql)
 alter table public.withdrawals add column if not exists acc_photos jsonb not null default '[]'::jsonb; -- migration 009
+
+-- migration 010: วันขนเสา
+alter table public.withdrawals add column if not exists move_date date;

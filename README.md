@@ -131,5 +131,6 @@ npm run dev                  # http://localhost:3000
 | `migration_007_areas.sql` | พื้นที่ (นครพนม/ธาตุพนม/นาแก/บ้านแพง) + สรุปแยกตามประเภทเสา |
 | `migration_008_accessories.sql` | อุปกรณ์เสริม (Anchor/Crossarm/Beam) ที่เบิกพร้อมเสา |
 | `migration_009_acc_photos.sql` | รูปหลังขนอุปกรณ์เสริม |
+| `migration_010_move_date.sql` | วันขนเสา + ปฏิทิน |
 
 (ติดตั้งใหม่ทั้งระบบ: รัน `schema.sql` ไฟล์เดียวพอ เพราะรวมทุกอย่างไว้แล้ว)
