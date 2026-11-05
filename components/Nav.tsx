@@ -49,7 +49,8 @@ export default function Nav() {
               {i.icon} {i.label}
             </Link>
           ))}
-          <span className="ml-auto">{areaChip}</span>
+          <Link href="/backup" className={`ml-auto rounded-lg px-3 py-2 text-sm ${active("/backup") ? "bg-brand text-white" : "text-slate-500 hover:bg-slate-100"}`}>⚙️ สำรองข้อมูล</Link>
+          {areaChip}
         </div>
       </header>
       {/* มือถือ: ชื่อพื้นที่ด้านบน + แถบเมนูด้านล่าง */}

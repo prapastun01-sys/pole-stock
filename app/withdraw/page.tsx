@@ -127,7 +127,7 @@ export default function Withdraw() {
     const next: Record<string, Picked> = {};
     take.forEach((p) => { next[p.id] = toPicked(p); });
     setPicked(next);
-    setMsg(take.length < n ? `⚠️ กองที่เลือกมีเสาคงเหลือเพียง ${take.length} ต้น (ขอ ${n}) เลือกให้ทั้งหมดแล้ว` : `✅ เลือกเสาอัตโนมัติ ${take.length} ต้น (จากชั้นบนสุด ซ้าย → ขวา)`);
+    setMsg(take.length < n ? `⚠️ กองที่เลือกมีเสาคงเหลือเพียง ${take.length} ต้น (ขอ ${n}) เลือกให้ทั้งหมดแล้ว` : `⚡ เลือกเสาอัตโนมัติ ${take.length} ต้น (จากชั้นบนสุด ซ้าย → ขวา)`);
   }
 
   // วางข้อมูลจาก Excel/Sheets: WBS ⇥ โครงข่าย ⇥ ชื่องาน ⇥ ทีมงาน ⇥ ผู้รับผิดชอบ [⇥ จำนวนเสา]

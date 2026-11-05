@@ -11,46 +11,46 @@ const dateTH = (d: Date) => d.toLocaleDateString("th-TH-u-ca-buddhist", { timeZo
 const timeTH = (d: Date) => d.toLocaleTimeString("th-TH", { timeZone: TZ, hour: "2-digit", minute: "2-digit" }) + " น.";
 
 const css = `
-@page { size: A4; margin: 14mm 14mm 16mm; }
-.sheet { background:#fff; max-width:210mm; margin:0 auto 24px; padding:14mm; box-shadow:0 1px 8px rgba(0,0,0,.18); }
-.doc { font-family:"Noto Sans Thai","Sarabun",sans-serif; color:#111; font-size:13.5px; line-height:1.5; }
+@page { size: A4; margin: 8mm; }
+.sheet { background:#fff; width:210mm; margin:0 auto 24px; padding:8mm; box-sizing:border-box; box-shadow:0 1px 8px rgba(0,0,0,.18); }
+.doc { font-family:"Noto Sans Thai","Sarabun",sans-serif; color:#111; font-size:12px; line-height:1.35; }
 .doc * { box-sizing:border-box; }
-.doc .head { text-align:center; padding-bottom:8px; border-bottom:2px solid #111; }
-.doc .org { font-size:14px; min-height:1px; }
-.doc h1 { margin:2px 0 0; font-size:24px; font-weight:700; letter-spacing:1px; }
-.doc .meta { display:flex; justify-content:space-between; gap:12px; margin:10px 0 12px; }
-.doc h2 { font-size:14.5px; margin:14px 0 6px; padding:3px 8px; background:#e9eef0; border-left:4px solid #0f766e; font-weight:700; }
+.doc .head { text-align:center; padding-bottom:4px; border-bottom:2px solid #111; }
+.doc .org { font-size:12.5px; min-height:1px; }
+.doc h1 { margin:0; font-size:20px; font-weight:700; letter-spacing:1px; line-height:1.3; }
+.doc .meta { display:flex; justify-content:space-between; gap:12px; margin:6px 0 6px; }
+.doc h2 { font-size:13px; margin:8px 0 4px; padding:2px 8px; background:#e9eef0; border-left:4px solid #0f766e; font-weight:700; }
 .doc table { width:100%; border-collapse:collapse; }
-.doc th, .doc td { border:1px solid #444; padding:5px 8px; vertical-align:top; }
+.doc th, .doc td { border:1px solid #444; padding:2px 6px; vertical-align:top; }
 .doc th { background:#f1f4f5; font-weight:700; text-align:center; }
-.doc .info th { width:28%; text-align:left; font-weight:600; }
+.doc .info th { width:24%; text-align:left; font-weight:600; }
 .doc .c { text-align:center; } .doc .r { text-align:right; }
 .doc .nos { word-break:break-word; }
 .doc tfoot td { font-weight:700; background:#f1f4f5; }
 .doc tr { page-break-inside:avoid; }
-.doc .sign { display:flex; gap:14px; margin-top:30px; page-break-inside:avoid; }
-.doc .sign > div { flex:1; text-align:center; font-size:13px; }
-.doc .sign .line { margin:38px 6px 4px; border-bottom:1px dotted #111; height:1px; }
-.doc .foot { margin-top:16px; font-size:11px; color:#555; display:flex; justify-content:space-between; }
-.doc .pile { margin:6px 0 12px 12px; page-break-inside:avoid; }
-.doc .pile h3 { margin:0; font-size:17px; font-weight:700; }
-.doc .pile .sub { font-size:12px; color:#555; }
+.doc .sign { display:flex; gap:12px; margin-top:12px; page-break-inside:avoid; }
+.doc .sign > div { flex:1; text-align:center; font-size:12px; }
+.doc .sign .line { margin:24px 6px 3px; border-bottom:1px dotted #111; height:1px; }
+.doc .foot { margin-top:8px; font-size:10px; color:#555; display:flex; justify-content:space-between; }
+.doc .pile { margin:3px 0 8px 8px; }
+.doc .pile h3 { margin:0; font-size:14px; font-weight:700; line-height:1.3; }
+.doc .pile .sub { font-size:11px; color:#555; }
 .doc .pile .sub b { color:#0f766e; }
-.doc .pphotos { display:flex; gap:10px; margin:6px 0 8px; align-items:flex-start; }
+.doc .pphotos { display:flex; gap:8px; margin:3px 0 5px; align-items:flex-start; }
 .doc .pphotos figure { margin:0; }
-.doc .pphotos figcaption { font-size:11px; color:#555; margin-bottom:2px; }
-.doc .pphotos img { height:92px; width:auto; max-width:130px; object-fit:cover; border-radius:6px; border:1px solid #ccc; display:block; }
-.doc .trow { display:flex; align-items:flex-start; gap:6px; margin-bottom:4px; }
-.doc .trow .tl { width:34px; font-size:11px; color:#888; padding-top:6px; flex:none; }
-.doc .tgrid { flex:1; display:grid; grid-template-columns:repeat(10,1fr); gap:4px; }
-.doc .cell { position:relative; text-align:center; padding:3px 0 10px; border-radius:7px; border:1px solid #e0b800; background:#fff3b0; font-weight:600; font-size:12.5px; }
-.doc .cell .tm { position:absolute; right:3px; bottom:0; font-size:7.5px; line-height:1.2; font-weight:600; color:#0f766e; max-width:95%; white-space:nowrap; overflow:hidden; text-overflow:clip; }
+.doc .pphotos figcaption { font-size:10px; color:#555; margin-bottom:1px; }
+.doc .pphotos img { height:64px; width:auto; max-width:100px; object-fit:cover; border-radius:5px; border:1px solid #ccc; display:block; }
+.doc .trow { display:flex; align-items:flex-start; gap:5px; margin-bottom:3px; }
+.doc .trow .tl { width:32px; font-size:10px; color:#888; padding-top:4px; flex:none; }
+.doc .tgrid { flex:1; display:grid; grid-template-columns:repeat(10,1fr); gap:3px; }
+.doc .cell { position:relative; text-align:center; padding:2px 0 8px; border-radius:6px; border:1px solid #e0b800; background:#fff3b0; font-weight:600; font-size:11.5px; line-height:1.25; }
+.doc .cell .tm { position:absolute; right:3px; bottom:0; font-size:7px; line-height:1.2; font-weight:600; color:#0f766e; max-width:95%; white-space:nowrap; overflow:hidden; text-overflow:clip; }
 .doc .cell.out { background:#e3e8ef; border-color:#c7d0dc; color:#8a94a3; text-decoration:line-through; }
 .doc .cell.old { background:#f4f5f7; border-color:#e5e7eb; color:#b8bec9; font-weight:400; }
 @media print {
   html, body { background:#fff !important; }
   main { padding:0 !important; max-width:none !important; }
-  .sheet { padding:0; margin:0; box-shadow:none; max-width:none; }
+  .sheet { padding:0; margin:0; box-shadow:none; width:194mm; }
   .no-print { display:none !important; }
 }
 `;
@@ -104,8 +104,8 @@ export default async function Print({ params, searchParams }: { params: { id: st
     <div>
       <style>{css}</style>
       <PrintBar auto={searchParams.auto === "1"} />
-      <div className="sheet">
-        <div className="doc">
+      <div className="sheet" id="sheet">
+        <div className="doc" id="doc">
           <div className="head">
             <div className="org">{org || " "}</div>
             <h1>ใบเบิกเสา</h1>

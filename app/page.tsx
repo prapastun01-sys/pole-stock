@@ -55,6 +55,7 @@ export default async function Home() {
       {noArea.length > 0 && <p className="text-xs text-slate-500">มีจุดกอง {noArea.length} กองที่ยังไม่ระบุพื้นที่ — เข้าการ์ด "ยังไม่ระบุพื้นที่" แล้วไปที่เมนู จุดกอง → ✏️ แก้ไข เพื่อกำหนดพื้นที่</p>}
 
       <AreaAdd />
+      <div className="pt-2 text-sm"><a className="text-slate-500 underline" href="/backup">⚙️ สำรอง / นำเข้าข้อมูล</a></div>
     </div>
   );
 }

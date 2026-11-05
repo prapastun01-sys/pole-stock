@@ -15,7 +15,7 @@ async function copyText(text: string, what: string) {
     const t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select();
     try { document.execCommand("copy"); } finally { document.body.removeChild(t); }
   }
-  notify(`✅ คัดลอก${what}แล้ว`);
+  notify(`📋 คัดลอก${what}แล้ว`);
 }
 
 export default function HistoryCard({ w, groups, when, accessories = [] }: { w: any; groups: { site: string; size: string; nos: string[] }[]; when: string; accessories?: any[] }) {
