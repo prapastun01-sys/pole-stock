@@ -9,7 +9,7 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (pathname === "/login" || pathname === "/api/login") return NextResponse.next();
 
-  const pass = process.env.APP_PASSCODE;
+  const pass = (process.env.APP_PASSCODE || "").trim();
   if (!pass) return NextResponse.next(); // ไม่ตั้งรหัส = ไม่ล็อก
 
   const expected = await sha256(pass + ":pole-stock");
