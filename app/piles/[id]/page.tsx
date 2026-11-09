@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/supabase";
 import { pilePhotos } from "@/lib/pile";
+import { withdrawalColors } from "@/lib/wcolor";
 import PilePhotosView from "@/components/PilePhotosView";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +17,7 @@ async function allPoles(siteId: string) {
   for (let from = 0; ; from += 1000) {
     const { data, error } = await s
       .from("poles")
-      .select("id,pole_no,tier,pos,status,photo_url,created_at,withdrawn_at,size_id,withdrawal_id,pole_sizes(name),withdrawals(job_name,responsible,team)")
+      .select("id,pole_no,tier,pos,status,photo_url,created_at,withdrawn_at,size_id,withdrawal_id,pole_sizes(name),withdrawals(job_name,responsible,team,created_at)")
       .eq("site_id", siteId)
       .order("tier", { ascending: true, nullsFirst: false })
       .order("pos", { ascending: true, nullsFirst: false })
@@ -57,6 +58,7 @@ export default async function Pile({ params }: { params: { id: string } }) {
   }
   const tiers = Array.from(byTier.keys()).sort((a, b) => (a === 0 ? -1 : b === 0 ? 1 : b - a));
 
+  const wcol = withdrawalColors(poles);
   const sizeNames = Array.from(new Set(poles.map((p) => p.pole_sizes?.name).filter(Boolean)));
   const avail = poles.filter((p) => p.status === "available").length;
   const phs = await pilePhotos([params.id]);
@@ -106,6 +108,11 @@ export default async function Pile({ params }: { params: { id: string } }) {
             <span><i className="mr-1 inline-block h-3 w-3 rounded border border-slate-300 bg-slate-200" />เบิกแล้ว</span>
           </div>
         </div>
+        {wcol.size > 0 && (
+          <div className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+            {Array.from(wcol.values()).map((c) => <span key={c.n}><i className="mr-1 inline-block h-3 w-3 rounded border align-[-2px]" style={{ background: c.bg, borderColor: c.bd }} />{c.label}</span>)}
+          </div>
+        )}
         <div className="space-y-2 overflow-x-auto">
           {tiers.map((t) => (
             <div key={t} className="flex items-start gap-2">
@@ -114,7 +121,8 @@ export default async function Pile({ params }: { params: { id: string } }) {
                 {byTier.get(t)!.map((p) => (
                   <div key={p.id}
                     title={`${p.pole_sizes?.name || ""} · ${p.status === "available" ? "คงเหลือ" : "เบิกแล้ว: " + (p.withdrawals?.job_name || "") + (p.withdrawals?.team ? " · ทีม " + p.withdrawals.team : "")}`}
-                    className={`relative min-w-[3.6rem] rounded-lg border px-2 py-1.5 text-center text-sm ${p.status !== "available" && p.withdrawals?.team ? "pb-3.5" : ""} ${p.status === "available" ? "border-yellow-400 bg-yellow-100 font-semibold" : "border-slate-300 bg-slate-200 text-slate-400 line-through"}`}>
+                    style={p.status !== "available" && wcol.get(p.withdrawal_id) ? { background: wcol.get(p.withdrawal_id)!.bg, borderColor: wcol.get(p.withdrawal_id)!.bd } : undefined}
+                    className={`relative min-w-[3.6rem] rounded-lg border px-2 py-1.5 text-center text-sm ${p.status !== "available" && p.withdrawals?.team ? "pb-3.5" : ""} ${p.status === "available" ? "border-yellow-400 bg-yellow-100 font-semibold" : "border-slate-300 bg-slate-200 text-slate-600 line-through"}`}>
                     {p.pole_no}
                     {p.status !== "available" && p.withdrawals?.team ? <span className="absolute bottom-0 right-1 max-w-[95%] overflow-hidden whitespace-nowrap text-[9px] font-semibold leading-tight text-teal-700 no-underline">{p.withdrawals.team}</span> : null}
                     {sizeNames.length > 1 && <div className="text-[10px] font-normal no-underline">{p.pole_sizes?.name}</div>}

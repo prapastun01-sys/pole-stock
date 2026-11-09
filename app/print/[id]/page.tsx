@@ -1,6 +1,7 @@
 import { db } from "@/lib/supabase";
 import PrintBar from "@/components/PrintBar";
 import { fetchPoles, pilePhotos } from "@/lib/pile";
+import { withdrawalColors } from "@/lib/wcolor";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -45,8 +46,11 @@ const css = `
 .doc .tgrid { flex:1; display:grid; grid-template-columns:repeat(10,1fr); gap:3px; }
 .doc .cell { position:relative; text-align:center; padding:2px 0 8px; border-radius:6px; border:1px solid #e0b800; background:#fff3b0; font-weight:600; font-size:11.5px; line-height:1.25; }
 .doc .cell .tm { position:absolute; right:3px; bottom:0; font-size:7px; line-height:1.2; font-weight:600; color:#0f766e; max-width:95%; white-space:nowrap; overflow:hidden; text-overflow:clip; }
-.doc .cell.out { background:#e3e8ef; border-color:#c7d0dc; color:#8a94a3; text-decoration:line-through; }
-.doc .cell.old { background:#f4f5f7; border-color:#e5e7eb; color:#b8bec9; font-weight:400; }
+.doc .legend { display:flex; flex-wrap:wrap; gap:2px 10px; font-size:10px; margin:0 0 4px 37px; }
+.doc .lg i { display:inline-block; width:10px; height:10px; border:1px solid; border-radius:3px; margin-right:3px; vertical-align:-1px; }
+.doc * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.doc .cell.out { background:#e3e8ef; border:2px solid #475569; padding:1px 0 7px; color:#334155; text-decoration:line-through; }
+.doc .cell.old { background:#f4f5f7; border-color:#e5e7eb; color:#64748b; font-weight:400; }
 @media print {
   html, body { background:#fff !important; }
   main { padding:0 !important; max-width:none !important; }
@@ -75,7 +79,7 @@ export default async function Print({ params, searchParams }: { params: { id: st
     for (const x of all) { const t = x.tier ?? 0; if (!byTier.has(t)) byTier.set(t, []); byTier.get(t)!.push(x); }
     const tiers = Array.from(byTier.keys()).sort((a, b) => (a === 0 ? -1 : b === 0 ? 1 : b - a));
     piles.push({
-      sid, site, tiers, byTier, ph: phs[sid],
+      sid, site, tiers, byTier, ph: phs[sid], wcol: withdrawalColors(all),
       total: all.length, avail: all.filter((x: any) => x.status === "available").length,
       title: [site?.zone, site?.pile].filter(Boolean).join(" / ") || site?.label || "",
     });
@@ -132,12 +136,20 @@ export default async function Print({ params, searchParams }: { params: { id: st
                     <img src={pl.ph.after.photos[0].url} alt="รูปหลังขนล่าสุด" /></figure>
                 )}
               </div>
+              {pl.wcol.size > 0 && (
+                <div className="legend">
+                  {Array.from(pl.wcol.entries()).map(([wid, c]: any) => (
+                    <span className="lg" key={wid}><i style={{ background: c.bg, borderColor: c.bd }} />{c.label}{wid === (w as any).id ? " (ใบนี้)" : ""}</span>
+                  ))}
+                </div>
+              )}
               {pl.tiers.map((t: number) => (
                 <div className="trow" key={t}>
                   <div className="tl">{t === 0 ? "ไม่ระบุ" : `ชั้น ${t}`}</div>
                   <div className="tgrid">
                     {pl.byTier.get(t)!.map((x: any) => (
-                      <div key={x.id} className={`cell ${x.withdrawal_id === (w as any).id ? "out" : x.status === "available" ? "" : "old"}`}>{x.pole_no}{x.withdrawals?.team && x.status !== "available" ? <span className="tm">{x.withdrawals.team}</span> : null}</div>
+                      <div key={x.id} style={x.status !== "available" && pl.wcol.get(x.withdrawal_id) ? { background: pl.wcol.get(x.withdrawal_id).bg, borderColor: pl.wcol.get(x.withdrawal_id).bd } : undefined}
+                        className={`cell ${x.withdrawal_id === (w as any).id ? "out" : x.status === "available" ? "" : "old"}`}>{x.pole_no}{x.withdrawals?.team && x.status !== "available" ? <span className="tm">{x.withdrawals.team}</span> : null}</div>
                     ))}
                   </div>
                 </div>
