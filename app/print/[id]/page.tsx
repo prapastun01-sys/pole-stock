@@ -44,7 +44,7 @@ const css = `
 .doc .trow { display:flex; align-items:flex-start; gap:5px; margin-bottom:3px; }
 .doc .trow .tl { width:32px; font-size:10px; color:#888; padding-top:4px; flex:none; }
 .doc .tgrid { flex:1; display:grid; grid-template-columns:repeat(10,1fr); gap:3px; }
-.doc .cell { position:relative; text-align:center; padding:2px 0 8px; border-radius:6px; border:1px solid #e0b800; background:#fff3b0; font-weight:600; font-size:11.5px; line-height:1.25; }
+.doc .cell { position:relative; text-align:center; padding:2px 0 8px; border-radius:6px; border:1px solid #94a3b8; background:#fff; font-weight:600; font-size:11.5px; line-height:1.25; }
 .doc .cell .tm { position:absolute; right:3px; bottom:0; font-size:7px; line-height:1.2; font-weight:600; color:#0f766e; max-width:95%; white-space:nowrap; overflow:hidden; text-overflow:clip; }
 .doc .legend { display:flex; flex-wrap:wrap; gap:2px 10px; font-size:10px; margin:0 0 4px 37px; }
 .doc .lg i { display:inline-block; width:10px; height:10px; border:1px solid; border-radius:3px; margin-right:3px; vertical-align:-1px; }
