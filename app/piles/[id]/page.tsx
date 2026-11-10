@@ -71,11 +71,11 @@ export default async function Pile({ params }: { params: { id: string } }) {
     if (cur) cur.n++; else adds.set(k, { ts: p.created_at, size: p.pole_sizes?.name, n: 1 });
   }
   const events = [
-    ...Array.from(adds.values()).map((a) => ({ ts: a.ts, kind: "add", text: `เพิ่มเสา ${a.n} ต้น (${a.size})` })),
+    ...Array.from(adds.values()).map((a) => ({ ts: a.ts, kind: "add", wid: "" as string, text: `เพิ่มเสา ${a.n} ต้น (${a.size})` })),
     ...wds.map((w: any) => {
       const mine = w.poles.filter((p: any) => p.site_id === params.id);
       return {
-        ts: w.created_at, kind: "out",
+        ts: w.created_at, kind: "out", wid: w.id as string,
         text: `เบิก ${mine.length} ต้น — ${w.job_name} · ${w.responsible}${w.team ? " · ทีม " + w.team : ""} · เลข ${mine.map((p: any) => p.pole_no).join(", ")}`,
       };
     }),
@@ -141,7 +141,13 @@ export default async function Pile({ params }: { params: { id: string } }) {
           {events.map((e, i) => (
             <li key={i} className="flex gap-3 py-2 text-sm">
               <span className={`mt-0.5 h-5 shrink-0 rounded px-1.5 text-xs leading-5 ${e.kind === "add" ? "bg-emerald-100 text-emerald-700" : "bg-orange-100 text-orange-700"}`}>{e.kind === "add" ? "เพิ่ม" : "เบิก"}</span>
-              <div><div>{e.text}</div><div className="text-xs text-slate-400">{fmt(e.ts)}</div></div>
+              <div className="grow">
+                <div>{e.text}</div>
+                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                  <span>{fmt(e.ts)}</span>
+                  {e.wid && <Link className="text-brand underline" href={`/print/${e.wid}`} target="_blank">🧾 ดูใบเบิก</Link>}
+                </div>
+              </div>
             </li>
           ))}
           {events.length === 0 && <li className="py-3 text-slate-500">ยังไม่มีประวัติ</li>}
