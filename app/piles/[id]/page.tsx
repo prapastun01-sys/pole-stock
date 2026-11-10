@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/supabase";
 import { pilePhotos } from "@/lib/pile";
 import { withdrawalColors } from "@/lib/wcolor";
+import PoleEditCell from "@/components/PoleEditCell";
 import PilePhotosView from "@/components/PilePhotosView";
 
 export const dynamic = "force-dynamic";
@@ -102,7 +103,7 @@ export default async function Pile({ params }: { params: { id: string } }) {
 
       <section className="card">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-semibold">ผังกอง <span className="text-sm font-normal text-slate-500">(ชั้นบนอยู่ด้านบน · อ่านซ้าย → ขวา)</span></h2>
+          <h2 className="font-semibold">ผังกอง <span className="text-sm font-normal text-slate-500">(ชั้นบนอยู่ด้านบน · อ่านซ้าย → ขวา · กดที่เลขเสาเพื่อแก้ไข)</span></h2>
           <div className="flex gap-3 text-xs">
             <span><i className="mr-1 inline-block h-3 w-3 rounded border border-slate-400 bg-white" />คงเหลือ</span>
             <span><i className="mr-1 inline-block h-3 w-3 rounded border border-slate-300 bg-slate-200" />เบิกแล้ว</span>
@@ -119,14 +120,14 @@ export default async function Pile({ params }: { params: { id: string } }) {
               <div className="w-14 shrink-0 pt-1.5 text-xs text-slate-400">{t === 0 ? "ไม่ระบุชั้น" : `ชั้น ${t}`}</div>
               <div className="flex flex-wrap gap-1.5">
                 {byTier.get(t)!.map((p) => (
-                  <div key={p.id}
+                  <PoleEditCell key={p.id} id={p.id} poleNo={p.pole_no} withdrawn={p.status !== "available"} size={p.pole_sizes?.name}
                     title={`${p.pole_sizes?.name || ""} · ${p.status === "available" ? "คงเหลือ" : "เบิกแล้ว: " + (p.withdrawals?.job_name || "") + (p.withdrawals?.team ? " · ทีม " + p.withdrawals.team : "")}`}
                     style={p.status !== "available" && wcol.get(p.withdrawal_id) ? { background: wcol.get(p.withdrawal_id)!.bg, borderColor: wcol.get(p.withdrawal_id)!.bd } : undefined}
                     className={`relative min-w-[3.6rem] rounded-lg border px-2 py-1.5 text-center text-sm ${p.status !== "available" && p.withdrawals?.team ? "pb-3.5" : ""} ${p.status === "available" ? "border-slate-400 bg-white font-semibold" : "border-slate-300 bg-slate-200 text-slate-600 line-through"}`}>
                     {p.pole_no}
                     {p.status !== "available" && p.withdrawals?.team ? <span className="absolute bottom-0 right-1 max-w-[95%] overflow-hidden whitespace-nowrap text-[9px] font-semibold leading-tight text-teal-700 no-underline">{p.withdrawals.team}</span> : null}
                     {sizeNames.length > 1 && <div className="text-[10px] font-normal no-underline">{p.pole_sizes?.name}</div>}
-                  </div>
+                  </PoleEditCell>
                 ))}
               </div>
             </div>
