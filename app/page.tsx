@@ -17,10 +17,30 @@ export default async function Home() {
   if (err) return <div className="card text-red-600">โหลดข้อมูลไม่ได้: {err.message}<br />ถ้าเพิ่งอัปเดตระบบ ให้รัน <code>migration_007_areas.sql</code> ใน Supabase</div>;
 
   const sites = (sitesQ.data || []) as any[];
+
+  // งานที่ยังไม่ใส่เลขใบตัดงาน (ยังไม่กด "งานเสร็จ") — นับเฉพาะใบที่อนุมัติแล้ว
+  let wq: any = await s.from("withdrawals").select("id,pole_free,area_id,approved_at").is("done_at", null);
+  if (wq.error) wq = await s.from("withdrawals").select("id").is("done_at", null); // ยังไม่ได้รัน migration 012/013
+  const openW = ((wq.data || []) as any[]).filter((w) => w.approved_at !== null);
+  const wSites = new Map<string, Set<string>>();
+  for (let i = 0; i < openW.length; i += 60) {
+    const { data } = await s.from("poles").select("withdrawal_id,site_id").in("withdrawal_id", openW.slice(i, i + 60).map((w) => w.id)).limit(5000);
+    for (const r of (data || []) as any[]) { if (!wSites.has(r.withdrawal_id)) wSites.set(r.withdrawal_id, new Set()); wSites.get(r.withdrawal_id)!.add(r.site_id); }
+  }
+  const openCount = (siteList: any[], areaKey: string) => {
+    if (areaKey === "all") return openW.length;
+    const ids = new Set(siteList.map((x) => x.id));
+    return openW.filter((w) => {
+      const ss = wSites.get(w.id);
+      if (ss && Array.from(ss).some((x) => ids.has(x))) return true;
+      return !!w.pole_free && (areaKey === "none" ? !w.area_id : w.area_id === areaKey);
+    }).length;
+  };
   const stock = (stockQ.data || []) as any[];
   const sum = (siteIds: Set<string>, k: "total" | "available") => stock.filter((r) => siteIds.has(r.site_id)).reduce((a, r) => a + Number(r[k]), 0);
 
   const card = (key: string, id: string, title: string, siteList: any[], emoji = "📍") => {
+    const open = openCount(siteList, id);
     const ids = new Set(siteList.map((x) => x.id));
     const points = new Set(siteList.map((x) => x.name)).size;
     const avail = sum(ids, "available"), total = sum(ids, "total");
@@ -33,6 +53,11 @@ export default async function Home() {
           <span className={`text-3xl font-bold ${avail === 0 ? "text-slate-400" : "text-emerald-600"}`}>{avail.toLocaleString()}</span>
           <span className="pb-1 text-sm text-slate-500">/ {total.toLocaleString()} ต้น (ใช้ได้)</span>
         </div>
+        {open > 0 && (
+          <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800">
+            ⚠️ {open} งานยังไม่ใส่เลขใบตัดงาน
+          </div>
+        )}
       </a>
     );
   };
