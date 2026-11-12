@@ -55,7 +55,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 // ลบใบเบิก: เสาทุกต้นในใบกลับเป็น "คงเหลือ" ในกองเดิม แล้วจึงลบใบเบิก
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
   const s = db();
-  const { data: w } = await s.from("withdrawals").select("job_name,poles(pole_no)").eq("id", params.id).single();
+  const { data: w } = await s.from("withdrawals").select("*, poles(pole_no)").eq("id", params.id).single();
   if (!w) return NextResponse.json({ error: "ไม่พบใบเบิกนี้" }, { status: 404 });
 
   const { error: e1 } = await s.from("poles")
@@ -66,8 +66,8 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   const { error: e2 } = await s.from("withdrawals").delete().eq("id", params.id);
   if (e2) return NextResponse.json({ error: "คืนเสาแล้วแต่ลบใบเบิกไม่สำเร็จ: " + e2.message }, { status: 500 });
 
-  // แจ้ง Telegram ว่ายกเลิกใบเบิก (ไม่ทำให้การลบล้มเหลวถ้าส่งไม่ได้)
-  try {
+  // แจ้ง Telegram ว่ายกเลิกใบเบิก — เฉพาะใบที่เคยอนุมัติ/แจ้งไปแล้ว (undefined = ยังไม่มีคอลัมน์ ถือว่าอนุมัติแล้ว)
+  if ((w as any).approved_at !== null) try {
     const nos = ((w as any).poles || []).map((p: any) => p.pole_no).join(", ");
     await callGas({ action: "notify", text: `🗑 <b>ยกเลิกใบเบิกเสา</b>\nงาน: ${esc((w as any).job_name)}\nคืนเสา ${(w as any).poles?.length || 0} ต้นเข้ากอง\nเลขเสา: ${esc(nos)}` });
   } catch {}

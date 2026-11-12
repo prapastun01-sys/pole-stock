@@ -163,7 +163,7 @@ export default async function Print({ params, searchParams }: { params: { id: st
             <tr><th>ผู้รับผิดชอบ</th><td>{(w as any).responsible}</td></tr>
             <tr><th>วันขนเสา</th><td>{dateTH(new Date(((w as any).move_date || created.toLocaleDateString("en-CA", { timeZone: TZ })) + "T12:00:00+07:00"))}</td></tr>
             <tr><th>ทีมงาน</th><td>{(w as any).team || "-"}</td></tr>
-            <tr><th>สถานะงาน</th><td>{done}</td></tr>
+            <tr><th>สถานะงาน</th><td>{(w as any).approved_at === null ? "รออนุมัติ" : done}</td></tr>
             <tr><th>รูปประกอบ</th><td>ก่อนขนเสา {nb} รูป · หลังขนเสา {na} รูป{nc > 0 ? ` · หลังขนอุปกรณ์เสริม ${nc} รูป` : ""} (เก็บไว้ในระบบ)</td></tr>
           </tbody></table>
 

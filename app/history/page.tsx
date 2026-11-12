@@ -21,8 +21,8 @@ export default async function History({ searchParams }: { searchParams: SP }) {
   for (let from = 0; ; from += 1000) {
     const COLS = "id,created_at,done_at,job_name,wbs,network,team,responsible,cut_no";
     const run = (c: string) => s.from("withdrawals").select(c).order("created_at", { ascending: false }).range(from, from + 999);
-    let { data, error } = await run(COLS + ",pole_free,area_id");
-    if (error && /pole_free|area_id/.test(error.message)) ({ data, error } = await run(COLS)); // ยังไม่ได้รัน migration_012
+    let { data, error } = await run(COLS + ",pole_free,area_id,approved_at");
+    if (error && /pole_free|area_id|approved_at/.test(error.message)) ({ data, error } = await run(COLS)); // ยังไม่ได้รัน migration 012/013
     if (error) return <div className="card text-red-600">{error.message}</div>;
     lean.push(...((data || []) as any[]));
     if ((data || []).length < 1000) break;
@@ -52,6 +52,8 @@ export default async function History({ searchParams }: { searchParams: SP }) {
     rows = rows.filter((w) => hit.has(w.id) || [w.wbs, w.network, w.team, w.responsible, w.job_name, w.cut_no].some((v) => String(v || "").toLowerCase().includes(ql)));
   }
 
+  const pendingCount = rows.filter((w) => w.approved_at === null).length;
+  rows = rows.filter((w) => w.approved_at !== null); // ใบที่รออนุมัติอยู่หน้า "รออนุมัติ"
   const doneCount = rows.filter((w) => w.done_at).length;
   if (!showDone) rows = rows.filter((w) => !w.done_at);
 
@@ -81,6 +83,12 @@ export default async function History({ searchParams }: { searchParams: SP }) {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">ประวัติการเบิกเสา</h1>
+
+      {pendingCount > 0 && (
+        <Link href="/approvals" className="card flex items-center justify-between border-amber-300 bg-amber-50 text-amber-800">
+          <span>⏳ มีใบเบิกรออนุมัติ <b>{pendingCount}</b> ใบ</span><span className="underline">ไปหน้ารออนุมัติ →</span>
+        </Link>
+      )}
 
       <form method="get" className="card flex flex-wrap items-end gap-2">
         <div className="min-w-56 grow">

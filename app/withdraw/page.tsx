@@ -5,6 +5,7 @@ import PhotoPicker from "@/components/PhotoPicker";
 import ItemsPicker from "@/components/ItemsPicker";
 import { todayBKK, type Item } from "@/lib/items";
 import { kindOf } from "@/lib/kinds";
+import { useRouter } from "next/navigation";
 import { useStatus, notify } from "@/lib/status";
 
 const REQUIRE_PHOTOS = false; // รูปก่อน/หลังขน ไม่บังคับ (ตั้งเป็น true ถ้าต้องการบังคับแนบ)
@@ -35,6 +36,7 @@ export default function Withdraw() {
   const [results, setResults] = useState<any[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useStatus();
+  const router = useRouter();
   const [done, setDone] = useState<string | null>(null);
   const [doneId, setDoneId] = useState<string | null>(null);
 
@@ -215,12 +217,11 @@ export default function Withdraw() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pole_ids: list.map((p) => p.id), ...f, before_photos, after_photos, acc_photos, items, move_date: moveDate }),
       });
-      setDoneId(r.id);
-      setMsg("✅ บันทึกใบเบิกเรียบร้อย");
+      setMsg("✅ บันทึกใบเบิกแล้ว — รออนุมัติ");
       if (r.itemsSaved === false) notify("⚠️ บันทึกใบเบิกแล้ว แต่บันทึกวันขนเสา/อุปกรณ์ไม่สำเร็จ — ตรวจว่ารัน migration_008, 009, 010 แล้ว");
-      setDone(`${list.length ? `เบิกเสา ${list.length} ต้น จาก ${cart.length} กลุ่ม` : `เบิกอุปกรณ์เสริม ${items.length} รายการ`} สำเร็จ${r.notified ? " และแจ้งเตือน Telegram แล้ว" : " (แต่แจ้งเตือน Telegram ไม่สำเร็จ)"}`);
       setPicked({}); setBefore([]); setAfter([]); setAccPhotos([]); setItems([]); setMoveDate(todayBKK()); setF(emptyForm); setQty(""); setPasteRow("");
       loadPoles(); loadMaster();
+      router.push("/approvals"); // ไปหน้ารออนุมัติ
     } catch (e: any) { setMsg("❌ " + e.message); }
     setBusy(false);
   }

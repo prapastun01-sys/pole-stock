@@ -27,8 +27,8 @@ export default async function Calendar({ searchParams }: { searchParams: { m?: s
   const q = (cols: string) => db().from("withdrawals").select(cols)
     .gte("move_date", first).lte("move_date", last).order("created_at", { ascending: true });
   const BASE = "id,job_name,team,responsible,move_date,items,poles(site_id,pole_sizes(name))";
-  let { data, error } = await q(BASE + ",pole_free,area_id");
-  if (error && /pole_free|area_id/.test(error.message)) ({ data, error } = await q(BASE)); // ยังไม่ได้รัน migration_012
+  let { data, error } = await q(BASE + ",pole_free,area_id,approved_at");
+  if (error && /pole_free|area_id|approved_at/.test(error.message)) ({ data, error } = await q(BASE)); // ยังไม่ได้รัน migration_012
   if (error) return <div className="card text-red-600">{error.message}<br />ต้องรัน <code>migration_010_move_date.sql</code> ใน Supabase ก่อน</div>;
 
   // กรองตามพื้นที่: นับเฉพาะเสาในกองของพื้นที่ที่เลือก
@@ -36,6 +36,7 @@ export default async function Calendar({ searchParams }: { searchParams: { m?: s
   const set = ids ? new Set(ids) : null;
   const ws: W[] = ((data || []) as any[])
     .map((w) => ({ ...w, poles: set ? w.poles.filter((p: any) => set.has(p.site_id)) : w.poles }))
+    .filter((w) => (w as any).approved_at !== null)
     .filter((w) => !set || w.poles.length > 0 || poleFreeInScope(w));
 
   const byDay = new Map<string, W[]>();

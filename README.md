@@ -134,5 +134,6 @@ npm run dev                  # http://localhost:3000
 | `migration_010_move_date.sql` | วันขนเสา + ปฏิทิน |
 | `migration_011_pole_no_per_pile.sql` | เลขเสาซ้ำข้ามกองได้ ห้ามซ้ำในกองเดียวกัน |
 | `migration_012_items_only.sql` | เบิกเฉพาะอุปกรณ์เสริม (ไม่มีเสา) |
+| `migration_013_approval.sql` | ใบเบิกต้องอนุมัติก่อน (หน้ารออนุมัติ) — รหัสอนุมัติตั้งผ่าน env `APPROVE_PASSCODE` |
 
 (ติดตั้งใหม่ทั้งระบบ: รัน `schema.sql` ไฟล์เดียวพอ เพราะรวมทุกอย่างไว้แล้ว)

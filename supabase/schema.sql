@@ -196,3 +196,6 @@ create unique index if not exists poles_site_pole_no_uniq on public.poles (site_
 -- migration 012: ใบเบิกเฉพาะอุปกรณ์เสริม
 alter table public.withdrawals add column if not exists pole_free boolean not null default false;
 alter table public.withdrawals add column if not exists area_id uuid references public.areas(id);
+
+-- migration 013: อนุมัติใบเบิก
+alter table public.withdrawals add column if not exists approved_at timestamptz;
