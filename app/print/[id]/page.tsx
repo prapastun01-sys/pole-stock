@@ -44,7 +44,8 @@ const css = `
 .doc .trow { display:flex; align-items:flex-start; gap:5px; margin-bottom:3px; }
 .doc .trow .tl { width:32px; font-size:10px; color:#888; padding-top:4px; flex:none; }
 .doc .tgrid { flex:1; display:grid; grid-template-columns:repeat(10,1fr); gap:3px; }
-.doc .cell { position:relative; text-align:center; padding:2px 0 8px; border-radius:6px; border:1px solid #94a3b8; background:#fff; font-weight:600; font-size:11.5px; line-height:1.25; }
+.doc .tgrid.dense .cell { font-size:9.5px; } .doc .tgrid.dense .cell .tm { font-size:6px; }
+.doc .cell { position:relative; min-width:0; text-align:center; padding:2px 0 8px; border-radius:6px; border:1px solid #94a3b8; background:#fff; font-weight:600; font-size:11.5px; line-height:1.25; }
 .doc .cell .tm { position:absolute; right:3px; bottom:0; font-size:7px; line-height:1.2; font-weight:600; color:#0f766e; max-width:95%; white-space:nowrap; overflow:hidden; text-overflow:clip; }
 .doc .legend { display:flex; flex-wrap:wrap; gap:2px 10px; font-size:10px; margin:0 0 4px 37px; }
 .doc .lg i { display:inline-block; width:10px; height:10px; border:1px solid; border-radius:3px; margin-right:3px; vertical-align:-1px; }
@@ -79,7 +80,7 @@ export default async function Print({ params, searchParams }: { params: { id: st
     for (const x of all) { const t = x.tier ?? 0; if (!byTier.has(t)) byTier.set(t, []); byTier.get(t)!.push(x); }
     const tiers = Array.from(byTier.keys()).sort((a, b) => (a === 0 ? -1 : b === 0 ? 1 : b - a));
     piles.push({
-      sid, site, tiers, byTier, ph: phs[sid], wcol: withdrawalColors(all),
+      sid, site, tiers, byTier, ph: phs[sid], maxN: Math.max(1, ...Array.from(byTier.values()).map((a: any[]) => a.length)), wcol: withdrawalColors(all),
       total: all.length, avail: all.filter((x: any) => x.status === "available").length,
       title: [site?.zone, site?.pile].filter(Boolean).join(" / ") || site?.label || "",
     });
@@ -146,7 +147,7 @@ export default async function Print({ params, searchParams }: { params: { id: st
               {pl.tiers.map((t: number) => (
                 <div className="trow" key={t}>
                   <div className="tl">{t === 0 ? "ไม่ระบุ" : `ชั้น ${t}`}</div>
-                  <div className="tgrid">
+                  <div className={`tgrid${pl.maxN > 14 ? " dense" : ""}`} style={{ gridTemplateColumns: `repeat(${pl.maxN}, minmax(0, 1fr))` }}>
                     {pl.byTier.get(t)!.map((x: any) => (
                       <div key={x.id} style={x.status !== "available" && pl.wcol.get(x.withdrawal_id) ? { background: pl.wcol.get(x.withdrawal_id).bg, borderColor: pl.wcol.get(x.withdrawal_id).bd } : undefined}
                         className={`cell ${x.withdrawal_id === (w as any).id ? "out" : x.status === "available" ? "" : "old"}`}>{x.pole_no}{x.withdrawals?.team && x.status !== "available" ? <span className="tm">{x.withdrawals.team}</span> : null}</div>
