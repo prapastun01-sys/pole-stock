@@ -47,7 +47,7 @@ export async function POST(req: Request) {
 
   const kind = b.kind || "new";
   if (!KIND_VALUES.includes(kind)) return NextResponse.json({ error: "ประเภทเสาไม่ถูกต้อง" }, { status: 400 });
-  const tiers: { tier: number; nos: any[] }[] = Array.isArray(b.tiers) ? b.tiers : [];
+  const tiers: { tier: number; nos: any[]; slots?: any[] }[] = Array.isArray(b.tiers) ? b.tiers : [];
   const s = db();
   const nextPos = new Map<number, number>();
   const seen = new Set<string>();
@@ -64,10 +64,17 @@ export async function POST(req: Request) {
         .not("pos", "is", null).order("pos", { ascending: false }).limit(1);
       nextPos.set(tier, last?.[0]?.pos ?? 0);
     }
+    // slots = ตำแหน่งช่องตามที่กรอก (เว้นช่องว่างได้) → pos ต่อจากเสาเดิมทางขวา; ไม่มี slots = เรียงต่อกัน
+    const base = nextPos.get(tier)!;
+    const raw = Array.isArray(t.slots) ? t.slots.map((x) => Number(x)) : [];
+    const useSlots = raw.length === (t.nos || []).length && raw.every((x) => Number.isInteger(x) && x >= 0 && x <= 100) && raw.every((x, i) => i === 0 || x > raw[i - 1]);
+    const slotOf = useSlots ? raw : null;
+    let idx = -1;
     for (const no of nos) {
+      idx++;
       if (seen.has(no)) return NextResponse.json({ error: `เลขเสาซ้ำในรายการที่กรอก: ${no}` }, { status: 400 });
       seen.add(no);
-      const pos = nextPos.get(tier)! + 1;
+      const pos = slotOf && slotOf.length === nos.length ? base + slotOf[idx] + 1 : nextPos.get(tier)! + 1;
       nextPos.set(tier, pos);
       rows.push({
         pole_no: no, tier, pos, layer: String(tier),

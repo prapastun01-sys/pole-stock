@@ -12,6 +12,10 @@ export default function StackView({ poles, showSize }: { poles: any[]; showSize?
   const tiers = Array.from(byTier.keys()).sort((a, b) => (a === 0 ? -1 : b === 0 ? 1 : b - a));
 
   const wcol = withdrawalColors(poles);
+  // คอลัมน์ของแต่ละเสา = pos (ตำแหน่งช่องที่กรอกไว้ เว้นช่องว่างได้); ไม่มี pos = ลำดับในชั้น
+  const colOf = (p: any, i: number) => (Number.isInteger(p.pos) && p.pos > 0 ? p.pos : i + 1);
+  let maxCol = 1;
+  byTier.forEach((arr) => arr.forEach((p, i) => { maxCol = Math.max(maxCol, colOf(p, i)); }));
 
   return (
     <div className="space-y-2 overflow-x-auto">
@@ -23,10 +27,10 @@ export default function StackView({ poles, showSize }: { poles: any[]; showSize?
       {tiers.map((t) => (
         <div key={t} className="flex items-start gap-2">
           <div className="w-14 shrink-0 pt-1.5 text-xs text-slate-400">{t === 0 ? "ไม่ระบุชั้น" : `ชั้น ${t}`}</div>
-          <div className="flex flex-wrap gap-1.5">
-            {byTier.get(t)!.map((p) => (
+          <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${maxCol}, minmax(3.6rem, auto))` }}>
+            {byTier.get(t)!.map((p, pi) => (
               <div key={p.id}
-                style={p.status !== "available" && wcol.get(p.withdrawal_id) ? { background: wcol.get(p.withdrawal_id)!.bg, borderColor: wcol.get(p.withdrawal_id)!.bd } : undefined}
+                style={{ gridColumnStart: colOf(p, pi), ...(p.status !== "available" && wcol.get(p.withdrawal_id) ? { background: wcol.get(p.withdrawal_id)!.bg, borderColor: wcol.get(p.withdrawal_id)!.bd } : {}) }}
                 title={`${p.pole_sizes?.name || ""} · ${p.status === "available" ? "คงเหลือ" : "เบิกแล้ว: " + (p.withdrawals?.job_name || "") + (p.withdrawals?.team ? " · ทีม " + p.withdrawals.team : "")}`}
                 className={`relative min-w-[3.6rem] rounded-lg border px-2 py-1.5 text-center text-sm ${p.status !== "available" && p.withdrawals?.team ? "pb-3.5" : ""} ${p.status === "available" ? "border-slate-400 bg-white font-semibold" : "border-slate-300 bg-slate-200 text-slate-600 line-through"}`}>
                 {p.pole_no}

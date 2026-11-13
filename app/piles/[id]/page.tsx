@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/supabase";
 import { pilePhotos } from "@/lib/pile";
 import { withdrawalColors } from "@/lib/wcolor";
+import DeletePileButton from "@/components/DeletePileButton";
 import PoleEditCell from "@/components/PoleEditCell";
 import PilePhotosView from "@/components/PilePhotosView";
 
@@ -60,6 +61,9 @@ export default async function Pile({ params }: { params: { id: string } }) {
   const tiers = Array.from(byTier.keys()).sort((a, b) => (a === 0 ? -1 : b === 0 ? 1 : b - a));
 
   const wcol = withdrawalColors(poles);
+  const colOf = (p: any, i: number) => (Number.isInteger(p.pos) && p.pos > 0 ? p.pos : i + 1);
+  let maxCol = 1;
+  byTier.forEach((arr) => arr.forEach((p, i) => { maxCol = Math.max(maxCol, colOf(p, i)); }));
   const sizeNames = Array.from(new Set(poles.map((p) => p.pole_sizes?.name).filter(Boolean)));
   const avail = poles.filter((p) => p.status === "available").length;
   const phs = await pilePhotos([params.id]);
@@ -86,7 +90,7 @@ export default async function Pile({ params }: { params: { id: string } }) {
     <div className="space-y-4">
       <div>
         <Link href="/piles" className="text-sm text-brand underline">← ผังกองเสาทั้งหมด</Link>
-        <h1 className="text-2xl font-bold">{site.label}</h1>
+        <div className="flex flex-wrap items-center justify-between gap-2"><h1 className="text-2xl font-bold">{site.label}</h1><DeletePileButton siteId={site.id} label={site.label} total={poles.length} redirectTo="/piles" /></div>
         <div className="mt-1 flex flex-wrap gap-2 text-sm">
           <span className="chip">ทั้งหมด {poles.length}</span>
           <span className="chip !bg-emerald-100 !text-emerald-700">คงเหลือ {avail}</span>
@@ -118,11 +122,11 @@ export default async function Pile({ params }: { params: { id: string } }) {
           {tiers.map((t) => (
             <div key={t} className="flex items-start gap-2">
               <div className="w-14 shrink-0 pt-1.5 text-xs text-slate-400">{t === 0 ? "ไม่ระบุชั้น" : `ชั้น ${t}`}</div>
-              <div className="flex flex-wrap gap-1.5">
-                {byTier.get(t)!.map((p) => (
+              <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${maxCol}, minmax(3.6rem, auto))` }}>
+                {byTier.get(t)!.map((p, pi) => (
                   <PoleEditCell key={p.id} id={p.id} poleNo={p.pole_no} withdrawn={p.status !== "available"} size={p.pole_sizes?.name}
                     title={`${p.pole_sizes?.name || ""} · ${p.status === "available" ? "คงเหลือ" : "เบิกแล้ว: " + (p.withdrawals?.job_name || "") + (p.withdrawals?.team ? " · ทีม " + p.withdrawals.team : "")}`}
-                    style={p.status !== "available" && wcol.get(p.withdrawal_id) ? { background: wcol.get(p.withdrawal_id)!.bg, borderColor: wcol.get(p.withdrawal_id)!.bd } : undefined}
+                    style={{ gridColumnStart: colOf(p, pi), ...(p.status !== "available" && wcol.get(p.withdrawal_id) ? { background: wcol.get(p.withdrawal_id)!.bg, borderColor: wcol.get(p.withdrawal_id)!.bd } : {}) }}
                     className={`relative min-w-[3.6rem] rounded-lg border px-2 py-1.5 text-center text-sm ${p.status !== "available" && p.withdrawals?.team ? "pb-3.5" : ""} ${p.status === "available" ? "border-slate-400 bg-white font-semibold" : "border-slate-300 bg-slate-200 text-slate-600 line-through"}`}>
                     {p.pole_no}
                     {p.status !== "available" && p.withdrawals?.team ? <span className="absolute bottom-0 right-1 max-w-[95%] overflow-hidden whitespace-nowrap text-[9px] font-semibold leading-tight text-teal-700 no-underline">{p.withdrawals.team}</span> : null}

@@ -80,7 +80,7 @@ export default async function Print({ params, searchParams }: { params: { id: st
     for (const x of all) { const t = x.tier ?? 0; if (!byTier.has(t)) byTier.set(t, []); byTier.get(t)!.push(x); }
     const tiers = Array.from(byTier.keys()).sort((a, b) => (a === 0 ? -1 : b === 0 ? 1 : b - a));
     piles.push({
-      sid, site, tiers, byTier, ph: phs[sid], maxN: Math.max(1, ...Array.from(byTier.values()).map((a: any[]) => a.length)), wcol: withdrawalColors(all),
+      sid, site, tiers, byTier, ph: phs[sid], maxN: Math.max(1, ...Array.from(byTier.values()).flatMap((a: any[]) => a.map((x: any, i: number) => (Number.isInteger(x.pos) && x.pos > 0 ? x.pos : i + 1)))), wcol: withdrawalColors(all),
       total: all.length, avail: all.filter((x: any) => x.status === "available").length,
       title: [site?.zone, site?.pile].filter(Boolean).join(" / ") || site?.label || "",
     });
@@ -148,8 +148,8 @@ export default async function Print({ params, searchParams }: { params: { id: st
                 <div className="trow" key={t}>
                   <div className="tl">{t === 0 ? "ไม่ระบุ" : `ชั้น ${t}`}</div>
                   <div className={`tgrid${pl.maxN > 14 ? " dense" : ""}`} style={{ gridTemplateColumns: `repeat(${pl.maxN}, minmax(0, 1fr))` }}>
-                    {pl.byTier.get(t)!.map((x: any) => (
-                      <div key={x.id} style={x.status !== "available" && pl.wcol.get(x.withdrawal_id) ? { background: pl.wcol.get(x.withdrawal_id).bg, borderColor: pl.wcol.get(x.withdrawal_id).bd } : undefined}
+                    {pl.byTier.get(t)!.map((x: any, xi: number) => (
+                      <div key={x.id} style={{ gridColumnStart: Number.isInteger(x.pos) && x.pos > 0 ? x.pos : xi + 1, ...(x.status !== "available" && pl.wcol.get(x.withdrawal_id) ? { background: pl.wcol.get(x.withdrawal_id).bg, borderColor: pl.wcol.get(x.withdrawal_id).bd } : {}) }}
                         className={`cell ${x.withdrawal_id === (w as any).id ? "out" : x.status === "available" ? "" : "old"}`}>{x.pole_no}{x.withdrawals?.team && x.status !== "available" ? <span className="tm">{x.withdrawals.team}</span> : null}</div>
                     ))}
                   </div>

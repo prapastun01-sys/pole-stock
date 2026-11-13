@@ -3,6 +3,7 @@ import { db } from "@/lib/supabase";
 import { scopedSites } from "@/lib/area";
 import { fetchPoles, pilePhotos } from "@/lib/pile";
 import PilePhotosView from "@/components/PilePhotosView";
+import DeletePileButton from "@/components/DeletePileButton";
 import StackView from "@/components/StackView";
 import KindButton from "@/components/KindButton";
 
@@ -92,7 +93,10 @@ export default async function Point({ searchParams }: { searchParams: { name?: s
                   <div className="font-semibold">{[p.site.zone, p.site.pile].filter(Boolean).join(" / ") || "กอง (ไม่ระบุชื่อ)"}</div>
                   <div className="text-xs text-slate-500">คงเหลือ <b className="text-emerald-600">{p.avail}</b> / {p.total} ต้น</div>
                 </div>
-                <Link href={`/piles/${p.site.id}`} className="btn-ghost !py-1.5 text-sm">ดูประวัติกองนี้</Link>
+                <div className="flex gap-2">
+                  <Link href={`/piles/${p.site.id}`} className="btn-ghost !py-1.5 text-sm">ดูประวัติกองนี้</Link>
+                  <DeletePileButton siteId={p.site.id} label={p.site.label || [p.site.zone, p.site.pile].filter(Boolean).join(" / ")} total={-1} />
+                </div>
               </div>
               <PilePhotosView ph={photos[p.site.id]} />
               {(() => {
