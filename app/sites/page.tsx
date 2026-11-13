@@ -39,9 +39,9 @@ export default function Sites() {
     e.preventDefault();
     setBusy(true); setMsg("กำลังบันทึก...");
     try {
-      await api("/api/sites", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...f, area_id: f.area_id || curArea }) });
+      const j = await api("/api/sites", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...f, area_id: f.area_id || curArea }) });
       setF({ name: "", zone: "", pile: "", lat: "", lng: "", note: "", area_id: "" });
-      setMsg("✅ เพิ่มจุดกองหมอนแล้ว");
+      setMsg(j.count > 1 ? `✅ สร้าง ${j.count} กองแล้ว` : "✅ เพิ่มจุดกองหมอนแล้ว");
       load();
     } catch (e: any) { setMsg("❌ " + e.message); }
     setBusy(false);
@@ -80,7 +80,7 @@ export default function Sites() {
         <div><label className="label">ชื่อจุด *</label><input className="input" required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="เช่น ที่เช่า / อ.เมือง" list="site-names" /><datalist id="site-names">{names.map((n) => <option key={n} value={n} />)}</datalist></div>
         <div><label className="label">พื้นที่</label><select className="input" value={f.area_id || curArea} onChange={(e) => setF({ ...f, area_id: e.target.value })}><option value="">ยังไม่ระบุ</option>{areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></div>
         <div><label className="label">Zone</label><input className="input" value={f.zone} onChange={(e) => setF({ ...f, zone: e.target.value })} placeholder="เช่น โซน A, Zone 1 (เว้นว่างได้)" /></div>
-        <div><label className="label">กอง (ถ้าจุดเดียวมีหลายกอง)</label><input className="input" value={f.pile} onChange={(e) => setF({ ...f, pile: e.target.value })} placeholder="เช่น กอง 1, กอง 2 (เว้นว่างได้)" /></div>
+        <div><label className="label">กอง (ถ้าจุดเดียวมีหลายกอง — คั่นด้วย , เพื่อสร้างหลายกองพร้อมกัน)</label><input className="input" value={f.pile} onChange={(e) => setF({ ...f, pile: e.target.value })} placeholder="เช่น 1, 2, 3 = สร้าง 3 กอง (เว้นว่างได้)" /></div>
         <div>
           <label className="label">พิกัด (วางจาก Google Maps ได้ เช่น 13.7563, 100.5018)</label>
           <input className="input" placeholder="วางพิกัดที่นี่" onChange={(e) => pasteCoord(e.target.value)} />
