@@ -32,6 +32,44 @@ function parseNums(text: string): string[] {
 
 type TierBox = { tier: number; text: string };
 
+// อ่านข้อความที่วาง โดยจำ "ตำแหน่งช่อง" ตามที่พิมพ์/วาง (ช่องว่างหน้าแถว/ระหว่างเลข = ช่องว่างในผัง)
+//  - วางจาก Excel (มี Tab): ช่องว่างระหว่าง Tab = ช่องว่าง
+//  - พิมพ์ด้วยเว้นวรรค: ใช้ตำแหน่งตัวอักษรเทียบกับระยะห่างปกติ (ระยะที่พบบ่อยที่สุดระหว่างเลข)
+function parsePasteSlots(text: string): { nos: string[]; slots: number[] }[] {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim());
+  const hasTab = lines.some((l) => l.includes("\t"));
+  let rows: { nos: string[]; slots: number[] }[];
+
+  if (hasTab) {
+    rows = lines.map((l) => {
+      const nos: string[] = [], slots: number[] = [];
+      l.split("\t").forEach((cell, ci) => parseNums(cell).forEach((n, k) => { nos.push(n); slots.push(ci + k); }));
+      return { nos, slots };
+    });
+  } else {
+    const toks = lines.map((l) => Array.from(l.matchAll(/\S+/g)).map((m) => ({ t: m[0], at: m.index || 0 })));
+    const freq = new Map<number, number>();
+    for (const r of toks) for (let i = 1; i < r.length; i++) { const d = r[i].at - r[i - 1].at; if (d > 0) freq.set(d, (freq.get(d) || 0) + 1); }
+    let pitch = 0, best = 0;
+    freq.forEach((c, d) => { if (c > best || (c === best && d < pitch)) { best = c; pitch = d; } });
+    if (!pitch) pitch = Math.max(1, ...toks.flat().map((x) => x.t.length)) + 1;
+    const leads = toks.map((r) => (r.length ? Math.floor(r[0].at / pitch + 0.25) : 0));
+    const minLead = Math.min(...leads);
+    rows = toks.map((r, li) => {
+      const nos: string[] = [], slots: number[] = [];
+      let slot = leads[li] - minLead, prevAt = -1;
+      r.forEach((x, i) => {
+        if (i > 0) slot += Math.max(1, Math.floor((x.at - prevAt) / pitch + 0.25));
+        prevAt = x.at;
+        parseNums(x.t).forEach((n, k) => { nos.push(n); slots.push(slot + k); });
+        const extra = parseNums(x.t).length - 1; if (extra > 0) slot += extra;
+      });
+      return { nos, slots };
+    });
+  }
+  return rows;
+}
+
 export default function NewPoles() {
   const [sites, setSites] = useState<any[]>([]);
   const [stock, setStock] = useState<any[]>([]);
@@ -67,13 +105,14 @@ export default function NewPoles() {
   useEffect(() => { loadExisting(siteId); /* eslint-disable-next-line */ }, [siteId]);
 
   const parsed = useMemo(() => {
-    if (mode === "tier") return boxes.map((b) => ({ tier: b.tier, nos: parseNums(b.text) }));
+    if (mode === "tier") return boxes.map((b) => ({ tier: b.tier, nos: parseNums(b.text), slots: undefined as number[] | undefined }));
     // บรรทัดล่างสุด = ชั้นล่างสุด (startTier) ขึ้นไปเรื่อยๆ
-    const lines = pasteText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).reverse();
-    return lines.map((l, i) => ({ tier: startTier + i, nos: parseNums(l) }));
+    const rows = parsePasteSlots(pasteText).reverse();
+    return rows.map((r, i) => ({ tier: startTier + i, nos: r.nos, slots: r.slots }));
   }, [mode, boxes, pasteText, startTier]);
 
   const all = parsed.flatMap((t) => t.nos);
+  const maxSlot = Math.max(0, ...parsed.flatMap((t) => (t.slots && t.slots.length ? t.slots : t.nos.map((_, k) => k))));
   const dups = all.filter((n, i) => all.indexOf(n) !== i);
   const total = all.length;
 
@@ -195,12 +234,12 @@ export default function NewPoles() {
         {/* ตัวอย่างผัง: ชั้นบนอยู่บน ชั้นล่างอยู่ล่าง เหมือนกองจริง */}
         <div className="rounded-xl bg-slate-50 p-3">
           <div className="mb-2 text-sm text-slate-500">ตัวอย่างผังกอง ({total} ต้น) — ชั้นบนอยู่ด้านบน, อ่านซ้ายไปขวา</div>
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 overflow-x-auto">
             {[...parsed].filter((t) => t.nos.length).sort((a, b) => b.tier - a.tier).map((t) => (
               <div key={t.tier} className="flex items-start gap-2">
                 <span className="w-12 shrink-0 pt-1 text-xs text-slate-400">ชั้น {t.tier}</span>
-                <div className="flex flex-wrap gap-1">
-                  {t.nos.map((n, k) => <span key={k} className={`rounded border px-1.5 py-0.5 text-sm ${dups.includes(n) ? "border-red-400 bg-red-50 text-red-600" : "border-yellow-400 bg-yellow-100"}`}>{n}</span>)}
+                <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${maxSlot + 1}, minmax(3.1rem, auto))` }}>
+                  {t.nos.map((n, k) => <span key={k} style={{ gridColumnStart: (t.slots ? t.slots[k] : k) + 1 }} className={`rounded border px-1.5 py-0.5 text-center text-sm ${dups.includes(n) ? "border-red-400 bg-red-50 text-red-600" : "border-yellow-400 bg-yellow-100"}`}>{n}</span>)}
                 </div>
               </div>
             ))}
