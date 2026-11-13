@@ -10,7 +10,7 @@ export default async function Home() {
   const s = db();
   const [areasQ, sitesQ, stockQ] = await Promise.all([
     s.from("areas").select("id,name").order("sort_order").order("name"),
-    s.from("sites").select("id,name,area_id"),
+    s.from("sites").select("id,name,area_id,lat,lng"),
     s.from("v_stock").select("site_id,size_name,sort_order,total,available"),
   ]);
   const err = areasQ.error || sitesQ.error;
@@ -91,6 +91,11 @@ export default async function Home() {
         {(areasQ.data || []).map((a: any) => card(a.id, a.id, a.name, sites.filter((x) => x.area_id === a.id)))}
         {noArea.length > 0 && card("none", "none", "ยังไม่ระบุพื้นที่", noArea, "❔")}
         {card("all", "all", "ดูทุกพื้นที่", sites, "🗂")}
+        <a href="/map" className="card block transition hover:border-brand hover:shadow-md">
+          <div className="text-lg font-bold text-brand">🗺 แผนที่</div>
+          <div className="mt-1 text-sm text-slate-500">ดูจุดกองหมอนทั้งหมดที่ลงพิกัดไว้บนแผนที่</div>
+          <div className="mt-3 text-3xl font-bold text-emerald-600">{new Set(sites.filter((x) => x.lat != null && x.lng != null).map((x) => x.name)).size}<span className="ml-1 text-sm font-normal text-slate-500">จุดที่มีพิกัด</span></div>
+        </a>
       </div>
 
       {noArea.length > 0 && <p className="text-xs text-slate-500">มีจุดกอง {noArea.length} กองที่ยังไม่ระบุพื้นที่ — เข้าการ์ด "ยังไม่ระบุพื้นที่" แล้วไปที่เมนู จุดกอง → ✏️ แก้ไข เพื่อกำหนดพื้นที่</p>}
