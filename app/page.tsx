@@ -11,7 +11,7 @@ export default async function Home() {
   const [areasQ, sitesQ, stockQ] = await Promise.all([
     s.from("areas").select("id,name").order("sort_order").order("name"),
     s.from("sites").select("id,name,area_id"),
-    s.from("v_stock").select("site_id,total,available"),
+    s.from("v_stock").select("site_id,size_name,sort_order,total,available"),
   ]);
   const err = areasQ.error || sitesQ.error;
   if (err) return <div className="card text-red-600">โหลดข้อมูลไม่ได้: {err.message}<br />ถ้าเพิ่งอัปเดตระบบ ให้รัน <code>migration_007_areas.sql</code> ใน Supabase</div>;
@@ -43,15 +43,31 @@ export default async function Home() {
     const open = openCount(siteList, id);
     const ids = new Set(siteList.map((x) => x.id));
     const points = new Set(siteList.map((x) => x.name)).size;
-    const avail = sum(ids, "available"), total = sum(ids, "total");
+    // เสาคงเหลือแยกตามขนาด
+    const bySize = new Map<string, { sort: number; n: number }>();
+    for (const r of stock) {
+      if (!ids.has(r.site_id) || Number(r.available) <= 0) continue;
+      const c = bySize.get(r.size_name) || { sort: Number(r.sort_order) || 0, n: 0 };
+      c.n += Number(r.available); bySize.set(r.size_name, c);
+    }
+    const sizes = Array.from(bySize.entries()).sort((a, b) => a[1].sort - b[1].sort);
     return (
       // ใช้ <a> ธรรมดา (ไม่ใช้ Link) เพราะลิงก์นี้ตั้ง cookie แล้ว redirect
       <a key={key} href={`/api/area/select?id=${id}&to=/summary`} className="card block transition hover:border-brand hover:shadow-md">
         <div className="text-lg font-bold text-brand">{emoji} {title}</div>
         <div className="mt-1 text-sm text-slate-500">{points} จุดกองหมอน · {siteList.length} กอง</div>
-        <div className="mt-3 flex items-end gap-1">
-          <span className={`text-3xl font-bold ${avail === 0 ? "text-slate-400" : "text-emerald-600"}`}>{avail.toLocaleString()}</span>
-          <span className="pb-1 text-sm text-slate-500">/ {total.toLocaleString()} ต้น (ใช้ได้)</span>
+        <div className="mt-3">
+          <div className="mb-1 text-xs text-slate-400">เสาคงเหลือ</div>
+          {sizes.length === 0 ? <div className="text-slate-400">ไม่มีเสาคงเหลือ</div> : (
+            <ul className="space-y-0.5">
+              {sizes.map(([n, v]) => (
+                <li key={n} className="flex items-baseline justify-between gap-3">
+                  <span className="font-medium">{n}</span>
+                  <span><b className="text-xl text-emerald-600">{v.n.toLocaleString()}</b> <span className="text-sm text-slate-500">ต้น</span></span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         {open > 0 && (
           <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800">
