@@ -55,7 +55,7 @@ export default async function Piles({ searchParams }: { searchParams: { all?: st
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="font-semibold">📍 {g.name}</div>
-                  <div className="text-xs text-slate-500">{g.active.size} กองที่ยังมีเสา · ทั้งหมด {g.piles.size} กอง</div>
+                  <div className="text-xs text-slate-500">{g.active.size} กอง</div>
                 </div>
                 <div className="text-right"><div className="text-2xl font-bold text-emerald-600">{avail}</div><div className="text-xs text-slate-400">ต้นคงเหลือ</div></div>
               </div>

@@ -42,7 +42,9 @@ export default async function Home() {
   const card = (key: string, id: string, title: string, siteList: any[], emoji = "📍") => {
     const open = openCount(siteList, id);
     const ids = new Set(siteList.map((x) => x.id));
-    const points = new Set(siteList.map((x) => x.name)).size;
+    const liveIds = new Set<string>();
+    for (const r of stock) if (ids.has(r.site_id) && Number(r.available) > 0) liveIds.add(r.site_id);
+    const points = new Set(siteList.filter((x) => liveIds.has(x.id)).map((x) => x.name)).size;
     // เสาคงเหลือแยกตามขนาด
     const bySize = new Map<string, { sort: number; n: number }>();
     for (const r of stock) {
@@ -55,7 +57,7 @@ export default async function Home() {
       // ใช้ <a> ธรรมดา (ไม่ใช้ Link) เพราะลิงก์นี้ตั้ง cookie แล้ว redirect
       <a key={key} href={`/api/area/select?id=${id}&to=/summary`} className="card block transition hover:border-brand hover:shadow-md">
         <div className="text-lg font-bold text-brand">{emoji} {title}</div>
-        <div className="mt-1 text-sm text-slate-500">{points} จุดกองหมอน · {siteList.length} กอง</div>
+        <div className="mt-1 text-sm text-slate-500">{points} จุดกองหมอน · {liveIds.size} กอง</div>
         <div className="mt-3">
           <div className="mb-1 text-xs text-slate-400">เสาคงเหลือ</div>
           {sizes.length === 0 ? <div className="text-slate-400">ไม่มีเสาคงเหลือ</div> : (

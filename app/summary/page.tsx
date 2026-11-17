@@ -41,7 +41,7 @@ export default async function Summary({ searchParams }: { searchParams: { kind?:
   for (const r of mine) {
     const n = nameOf.get(r.site_id); if (!n) continue;
     if (!groups.has(n)) groups.set(n, { name: n, piles: new Set(), sizes: new Map() });
-    const g = groups.get(n)!; g.piles.add(r.site_id);
+    const g = groups.get(n)!; if (Number(r.available) > 0) g.piles.add(r.site_id);
     const c = g.sizes.get(r.size_id) || { name: sizeName.get(r.size_id)?.name || "-", sort: sizeName.get(r.size_id)?.sort ?? 0, total: 0, avail: 0 };
     c.total += Number(r.total); c.avail += Number(r.available);
     g.sizes.set(r.size_id, c);

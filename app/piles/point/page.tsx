@@ -63,7 +63,7 @@ export default async function Point({ searchParams }: { searchParams: { name?: s
         <h1 className="text-2xl font-bold">📍 {name}</h1>
         <div className="mt-1 flex flex-wrap gap-2 text-sm">
           <span className="chip !bg-emerald-100 !text-emerald-700">คงเหลือ {totalAvail} ต้น</span>
-          <span className="chip">{sites.length} กอง</span>
+          <span className="chip">{new Set(rows.filter((r) => Number(r.available) > 0).map((r) => r.site_id)).size} กอง</span>
           {sites[0].lat != null && <a className="chip" target="_blank" href={`https://maps.google.com/?q=${sites[0].lat},${sites[0].lng}`}>🗺 แผนที่</a>}
         </div>
       </div>
