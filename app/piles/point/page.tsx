@@ -98,7 +98,7 @@ export default async function Point({ searchParams }: { searchParams: { name?: s
                   <DeletePileButton siteId={p.site.id} label={p.site.label || [p.site.zone, p.site.pile].filter(Boolean).join(" / ")} total={-1} />
                 </div>
               </div>
-              <PilePhotosView ph={photos[p.site.id]} />
+              <PilePhotosView ph={photos[p.site.id]} siteId={p.site.id} label={p.site.label || [p.site.zone, p.site.pile].filter(Boolean).join(" / ")} />
               {(() => {
                 const dep = stacks[i].filter((x: any) => x.kind === "deposit" && x.status === "available").length;
                 return dep > 0 ? <div className="mb-3"><KindButton siteId={p.site.id} sizeId={sel!.id} count={dep} /></div> : null;

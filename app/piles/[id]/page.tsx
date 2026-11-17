@@ -102,7 +102,7 @@ export default async function Pile({ params }: { params: { id: string } }) {
 
       <section className="card">
         <h2 className="mb-2 font-semibold">รูปกอง</h2>
-        <PilePhotosView ph={phs[params.id]} />
+        <PilePhotosView ph={phs[params.id]} siteId={params.id} label={site.label || ""} />
       </section>
 
       <section className="card">

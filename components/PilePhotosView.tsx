@@ -1,9 +1,10 @@
 import type { PilePhotos } from "@/lib/pile";
+import ChangeFullPhoto from "@/components/ChangeFullPhoto";
 
 const d = (x: string) => new Date(x).toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", dateStyle: "medium" });
 
 // แสดงรูปกองเต็ม + รูปหลังขนล่าสุด (server component)
-export default function PilePhotosView({ ph }: { ph?: PilePhotos }) {
+export default function PilePhotosView({ ph, siteId, label }: { ph?: PilePhotos; siteId?: string; label?: string }) {
   const none = "flex h-24 w-32 items-center justify-center rounded-lg border border-dashed text-xs text-slate-400";
   return (
     <div className="mb-3 flex flex-wrap gap-4">
@@ -15,6 +16,7 @@ export default function PilePhotosView({ ph }: { ph?: PilePhotos }) {
             <img src={ph.full.url} alt="รูปกองเต็ม" loading="lazy" className="h-24 w-32 rounded-lg border object-cover" />
           </a>
         ) : <div className={none}>ไม่มีรูป</div>}
+        {siteId && <ChangeFullPhoto siteId={siteId} label={label || ""} has={!!ph?.full} />}
       </div>
       <div>
         <div className="mb-1 text-xs text-slate-500">รูปหลังขนล่าสุด {ph?.after ? `(${d(ph.after.at)} · ${ph.after.job})` : ""}</div>
