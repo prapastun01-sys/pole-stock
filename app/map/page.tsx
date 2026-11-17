@@ -38,11 +38,13 @@ export default async function MapPage() {
       const c = by.get(r.size_name) || { sort: Number(r.sort_order) || 0, n: 0 };
       c.n += Number(r.available); by.set(r.size_name, c);
     }
+    const withStock = new Set<string>();
+    for (const r of stock) if (ids.has(r.site_id) && Number(r.available) > 0) withStock.add(r.site_id);
     const sizes = Array.from(by.entries()).sort((a, b) => a[1].sort - b[1].sort).map(([n, v]) => ({ name: n, n: v.n }));
     const lat = withXY.reduce((a, x) => a + Number(x.lat), 0) / withXY.length;
     const lng = withXY.reduce((a, x) => a + Number(x.lng), 0) / withXY.length;
     const aid = list.find((x) => x.area_id)?.area_id || null;
-    points.push({ name, areaId: aid, areaName: aid ? areaName.get(aid) || "-" : "ยังไม่ระบุพื้นที่", lat, lng, avail: sizes.reduce((a, z) => a + z.n, 0), piles: list.length, sizes });
+    points.push({ name, areaId: aid, areaName: aid ? areaName.get(aid) || "-" : "ยังไม่ระบุพื้นที่", lat, lng, avail: sizes.reduce((a, z) => a + z.n, 0), piles: withStock.size, sizes });
   });
 
   return (
