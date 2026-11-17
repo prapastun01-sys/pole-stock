@@ -72,7 +72,8 @@ export default function Withdraw() {
     return Array.from(m.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [sites, stock]);
   const pileName = (s: any) => [s.zone && `Zone ${s.zone}`, s.pile].filter(Boolean).join(" / ") || "กองหลัก";
-  const pilesOfPoint = sites.filter((s) => s.name === pointName && availOf(s.id) > 0);
+  const natCmp = (a: any, b: any) => String(a ?? "").localeCompare(String(b ?? ""), "th", { numeric: true });
+  const pilesOfPoint = sites.filter((s) => s.name === pointName && availOf(s.id) > 0).sort((a, b) => natCmp(a.zone, b.zone) || natCmp(a.pile, b.pile));
   const otherTicked = sites.filter((s) => siteIds.includes(s.id) && s.name !== pointName);
 
   const loadPoles = () => {

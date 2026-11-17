@@ -17,7 +17,10 @@ export default async function Point({ searchParams }: { searchParams: { name?: s
   const showAll = searchParams.all === "1";
   const s = db();
 
-  const { data: sites } = await scopedSites("id,name,zone,pile,label,lat,lng,note").eq("name", name).order("pile");
+  const { data: rawSites } = await scopedSites("id,name,zone,pile,label,lat,lng,note").eq("name", name);
+  // เรียงตามโซนแล้วตามเลขกอง (น้อย → มาก, เรียงเลขแบบธรรมชาติ 2 ก่อน 10)
+  const nat = (a: any, b: any) => String(a ?? "").localeCompare(String(b ?? ""), "th", { numeric: true });
+  const sites = rawSites ? [...rawSites].sort((a: any, b: any) => nat(a.zone, b.zone) || nat(a.pile, b.pile)) : rawSites;
   if (!sites || sites.length === 0)
     return <div className="card">ไม่พบจุดกองหมอนนี้ <Link className="text-brand underline" href="/piles">กลับ</Link></div>;
 
