@@ -46,7 +46,8 @@ export default async function Summary({ searchParams }: { searchParams: { kind?:
     c.total += Number(r.total); c.avail += Number(r.available);
     g.sizes.set(r.size_id, c);
   }
-  const list = Array.from(groups.values()).sort((a, b) => a.name.localeCompare(b.name));
+  // ซ่อนจุดที่เสาคงเหลือ 0 (ถ้ามีเสาเข้ามาใหม่จะกลับมาแสดงเอง)
+  const list = Array.from(groups.values()).filter((g) => Array.from(g.sizes.values()).some((z) => z.avail > 0)).sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div className="space-y-4">
@@ -97,7 +98,7 @@ export default async function Summary({ searchParams }: { searchParams: { kind?:
             <h3 className="font-semibold">แยกตามจุดกองหมอน <span className="text-sm font-normal text-slate-500">(ใช้ได้ / ทั้งหมด)</span></h3>
             <div className="grid gap-3 md:grid-cols-2">
               {list.map((g) => {
-                const sz = Array.from(g.sizes.values()).sort((a, b) => a.sort - b.sort);
+                const sz = Array.from(g.sizes.values()).filter((z) => z.avail > 0).sort((a, b) => a.sort - b.sort);
                 const a = sz.reduce((x, s) => x + s.avail, 0), t = sz.reduce((x, s) => x + s.total, 0);
                 return (
                   <Link key={g.name} href={`/piles/point?name=${encodeURIComponent(g.name)}`} className="card block hover:border-brand">
