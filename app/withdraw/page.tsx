@@ -44,8 +44,9 @@ export default function Withdraw() {
   const [items, setItems] = useState<Item[]>([]);
   useEffect(() => { api("/api/accessories").then((j) => setAccessories(j.accessories)).catch(() => {}); }, []);
   const [stock, setStock] = useState<any[]>([]);
+  const [kindStock, setKindStock] = useState<any[]>([]);
   const [pointName, setPointName] = useState("");
-  const loadMaster = () => api("/api/master").then((j) => { setSites(j.sites); setSizes(j.sizes); setStock(j.stock || []); }).catch((e) => setMsg("❌ " + e.message));
+  const loadMaster = () => api("/api/master").then((j) => { setSites(j.sites); setSizes(j.sizes); setStock(j.stock || []); setKindStock(j.kinds || []); }).catch((e) => setMsg("❌ " + e.message));
   useEffect(() => { loadMaster(); /* eslint-disable-next-line */ }, []);
 
   // ยอดใช้ได้ต่อกอง (กรองตามขนาดที่ติ๊ก)
@@ -71,6 +72,16 @@ export default function Withdraw() {
     }
     return Array.from(m.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [sites, stock]);
+  // ประเภทเสาที่ไม่ใช่เสาใหม่ ที่ยังคงเหลือในกอง (รื้อถอน/หมดอายุ/หัก/รับฝาก)
+  const specialKinds = (siteId: string) => {
+    const m = new Map<string, number>();
+    for (const r of kindStock) {
+      if (r.site_id !== siteId || r.kind === "new" || Number(r.available) <= 0) continue;
+      if (sizeIds.length && !sizeIds.includes(r.size_id)) continue;
+      m.set(r.kind, (m.get(r.kind) || 0) + Number(r.available));
+    }
+    return Array.from(m.entries());
+  };
   const pileName = (s: any) => [s.zone && `Zone ${s.zone}`, s.pile].filter(Boolean).join(" / ") || "กองหลัก";
   const natCmp = (a: any, b: any) => String(a ?? "").localeCompare(String(b ?? ""), "th", { numeric: true });
   const pilesOfPoint = sites.filter((s) => s.name === pointName && availOf(s.id) > 0).sort((a, b) => natCmp(a.zone, b.zone) || natCmp(a.pile, b.pile));
@@ -288,12 +299,14 @@ export default function Withdraw() {
             <div className="grid gap-2 sm:grid-cols-2">
               {pilesOfPoint.map((s) => {
                 const on = siteIds.includes(s.id);
+                const sp = specialKinds(s.id);
                 return (
-                  <label key={s.id} className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5 ${on ? "border-brand bg-brand-light" : "border-slate-200"}`}>
+                  <label key={s.id} className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5 ${on ? "border-brand bg-brand-light" : sp.length ? "border-orange-300 bg-orange-50" : "border-slate-200"}`}>
                     <input type="checkbox" className="h-5 w-5 accent-teal-700" checked={on} onChange={() => tick(siteIds, setSiteIds, s.id)} />
                     <span className="flex-1">
                       <span className="font-semibold">{pileName(s)}</span>
                       <span className="block text-xs text-slate-500">{(pileSizes.get(s.id) || []).map((z) => `${z.name}: ${z.avail}`).join(" · ")}</span>
+                      {sp.length > 0 && <span className="mt-1 flex flex-wrap gap-1">{sp.map(([k, n]) => <span key={k} className={`rounded-full px-2 py-0.5 text-xs font-semibold ${kindOf(k).cls}`}>⚠️ {kindOf(k).label} {n} ต้น</span>)}</span>}
                     </span>
                     <span className="text-right"><b className="text-xl text-emerald-600">{availOf(s.id)}</b><span className="block text-[10px] text-slate-400">ใช้ได้ (ต้น)</span></span>
                   </label>

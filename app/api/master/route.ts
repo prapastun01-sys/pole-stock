@@ -19,11 +19,14 @@ export async function GET() {
 
   const ids = (sites.data || []).map((x: any) => x.id);
   let stock: any[] = [];
+  let kinds: any[] = [];
   if (ids.length) {
     const { data } = await s.from("v_stock").select("site_id,size_id,total,available").in("site_id", ids);
     stock = data || [];
+    const k = await s.from("v_stock_kind").select("site_id,size_id,kind,available").in("site_id", ids);
+    kinds = k.data || [];
   }
   const a = areaCookie();
   const area = isAreaId(a) ? (areas.data || []).find((x: any) => x.id === a) || null : null;
-  return NextResponse.json({ sites: sites.data, sizes: sizes.data, areas: areas.data, stock, area, scope: a || "all" });
+  return NextResponse.json({ sites: sites.data, sizes: sizes.data, areas: areas.data, stock, kinds, area, scope: a || "all" });
 }
