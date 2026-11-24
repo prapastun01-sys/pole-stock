@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/supabase";
 import { scopedSites } from "@/lib/area";
 import { fetchPoles, pilePhotos } from "@/lib/pile";
+import PoleSearch from "@/components/PoleSearch";
 import PilePhotosView from "@/components/PilePhotosView";
 import DeletePileButton from "@/components/DeletePileButton";
 import StackView from "@/components/StackView";
@@ -70,6 +71,8 @@ export default async function Point({ searchParams }: { searchParams: { name?: s
           {sites[0].lat != null && <a className="chip" target="_blank" href={`https://maps.google.com/?q=${sites[0].lat},${sites[0].lng}`}>🗺 แผนที่</a>}
         </div>
       </div>
+
+      <PoleSearch siteIds={ids} />
 
       <section className="card">
         <h2 className="mb-2 font-semibold">เลือกขนาดเสา</h2>
