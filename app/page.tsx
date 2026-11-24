@@ -8,11 +8,15 @@ export const revalidate = 0;
 // หน้าแรก: เลือกพื้นที่ (นครพนม / ธาตุพนม / นาแก / บ้านแพง ...) แล้วเข้าไปใช้เมนูของพื้นที่นั้น
 export default async function Home() {
   const s = db();
-  const [areasQ, sitesQ, stockQ] = await Promise.all([
+  const [areasQ, sitesQ, stockQ, kindQ, sizesQ] = await Promise.all([
     s.from("areas").select("id,name").order("sort_order").order("name"),
     s.from("sites").select("id,name,area_id,lat,lng"),
     s.from("v_stock").select("site_id,size_name,sort_order,total,available"),
+    s.from("v_stock_kind").select("site_id,size_id,kind,available"),
+    s.from("pole_sizes").select("id,name,sort_order"),
   ]);
+  const sizeInfo = new Map<string, { name: string; sort: number }>(((sizesQ.data || []) as any[]).map((z) => [z.id as string, { name: z.name as string, sort: Number(z.sort_order) || 0 }]));
+  const kindRows = (kindQ.data || []) as any[];
   const err = areasQ.error || sitesQ.error;
   if (err) return <div className="card text-red-600">โหลดข้อมูลไม่ได้: {err.message}<br />ถ้าเพิ่งอัปเดตระบบ ให้รัน <code>migration_007_areas.sql</code> ใน Supabase</div>;
 
@@ -45,14 +49,18 @@ export default async function Home() {
     const liveIds = new Set<string>();
     for (const r of stock) if (ids.has(r.site_id) && Number(r.available) > 0) liveIds.add(r.site_id);
     const points = new Set(siteList.filter((x) => liveIds.has(x.id)).map((x) => x.name)).size;
-    // เสาคงเหลือแยกตามขนาด
-    const bySize = new Map<string, { sort: number; n: number }>();
-    for (const r of stock) {
-      if (!ids.has(r.site_id) || Number(r.available) <= 0) continue;
-      const c = bySize.get(r.size_name) || { sort: Number(r.sort_order) || 0, n: 0 };
-      c.n += Number(r.available); bySize.set(r.size_name, c);
+    // เสาคงเหลือแยกตามขนาด และแยกเสาใหม่ / เสารื้อถอน / อื่นๆ
+    const bySize = new Map<string, { sort: number; nw: number; dis: number; other: number }>();
+    for (const r of kindRows) {
+      const n = Number(r.available);
+      if (!ids.has(r.site_id) || n <= 0) continue;
+      const info = sizeInfo.get(r.size_id); if (!info) continue;
+      const c = bySize.get(info.name) || { sort: info.sort, nw: 0, dis: 0, other: 0 };
+      if (r.kind === "new") c.nw += n; else if (r.kind === "dismantled") c.dis += n; else c.other += n;
+      bySize.set(info.name, c);
     }
     const sizes = Array.from(bySize.entries()).sort((a, b) => a[1].sort - b[1].sort);
+    const hasOther = sizes.some(([, v]) => v.other > 0);
     return (
       // ใช้ <a> ธรรมดา (ไม่ใช้ Link) เพราะลิงก์นี้ตั้ง cookie แล้ว redirect
       <a key={key} href={`/api/area/select?id=${id}&to=/summary`} className="card block transition hover:border-brand hover:shadow-md">
@@ -62,10 +70,18 @@ export default async function Home() {
           <div className="mb-1 text-xs text-slate-400">เสาคงเหลือ</div>
           {sizes.length === 0 ? <div className="text-slate-400">ไม่มีเสาคงเหลือ</div> : (
             <ul className="space-y-0.5">
+              <li className="flex items-baseline gap-3 text-xs text-slate-500">
+                <span className="flex-1" />
+                <span className="w-20 whitespace-nowrap text-right">เสาใหม่</span>
+                <span className="w-20 whitespace-nowrap text-right">เสารื้อถอน</span>
+                {hasOther && <span className="w-14 text-right">อื่นๆ</span>}
+              </li>
               {sizes.map(([n, v]) => (
-                <li key={n} className="flex items-baseline justify-between gap-3">
-                  <span className="font-medium">{n}</span>
-                  <span><b className="text-xl text-emerald-600">{v.n.toLocaleString()}</b> <span className="text-sm text-slate-500">ต้น</span></span>
+                <li key={n} className="flex items-baseline gap-3">
+                  <span className="flex-1 font-medium">{n}</span>
+                  <span className="w-20 whitespace-nowrap text-right"><b className="text-xl text-emerald-600">{v.nw.toLocaleString()}</b> <span className="text-xs text-slate-500">ต้น</span></span>
+                  <span className="w-20 whitespace-nowrap text-right"><b className={`text-xl ${v.dis ? "text-orange-600" : "text-slate-300"}`}>{v.dis.toLocaleString()}</b> <span className="text-xs text-slate-500">ต้น</span></span>
+                  {hasOther && <span className="w-14 text-right"><b className="text-lg text-slate-600">{v.other.toLocaleString()}</b></span>}
                 </li>
               ))}
             </ul>
