@@ -52,12 +52,12 @@ export default function Withdraw() {
   // ยอดใช้ได้ต่อกอง (กรองตามขนาดที่ติ๊ก)
   const availOf = (siteId: string) => stock.filter((r) => r.site_id === siteId && (sizeIds.length === 0 || sizeIds.includes(r.size_id))).reduce((a, r) => a + Number(r.available), 0);
   const pileSizes = useMemo(() => {
-    const m = new Map<string, { name: string; avail: number }[]>();
+    const m = new Map<string, { id: string; name: string; avail: number }[]>();
     for (const r of stock) {
       if (Number(r.available) <= 0) continue;
       const z = sizes.find((x) => x.id === r.size_id);
       if (!m.has(r.site_id)) m.set(r.site_id, []);
-      m.get(r.site_id)!.push({ name: z?.name || "-", avail: Number(r.available) });
+      m.get(r.site_id)!.push({ id: r.size_id as string, name: z?.name || "-", avail: Number(r.available) });
     }
     return m;
   }, [stock, sizes]);
@@ -82,6 +82,13 @@ export default function Withdraw() {
     }
     return Array.from(m.entries());
   };
+  // ขนาดเสาที่ยังมีเหลือในจุดที่เลือก (ถ้ายังไม่เลือกจุด แสดงทุกขนาด)
+  const sizesOfPoint = useMemo(() => {
+    const ids = new Set(sites.filter((x) => !pointName || x.name === pointName).map((x) => x.id));
+    const m = new Map<string, number>();
+    for (const r of stock) if (ids.has(r.site_id) && Number(r.available) > 0) m.set(r.size_id, (m.get(r.size_id) || 0) + Number(r.available));
+    return sizes.filter((z) => m.has(z.id)).map((z) => ({ ...z, avail: m.get(z.id)! }));
+  }, [sites, stock, sizes, pointName]);
   const pileName = (s: any) => [s.zone && `Zone ${s.zone}`, s.pile].filter(Boolean).join(" / ") || "กองหลัก";
   const natCmp = (a: any, b: any) => String(a ?? "").localeCompare(String(b ?? ""), "th", { numeric: true });
   const pilesOfPoint = sites.filter((s) => s.name === pointName && availOf(s.id) > 0).sort((a, b) => natCmp(a.zone, b.zone) || natCmp(a.pile, b.pile));
@@ -287,14 +294,27 @@ export default function Withdraw() {
       <section className="card space-y-3">
         <div>
           <label className="label">1) เลือกจุดกองหมอน</label>
-          <select className="input" value={pointName} onChange={(e) => setPointName(e.target.value)}>
+          <select className="input" value={pointName} onChange={(e) => { setPointName(e.target.value); setSizeIds([]); }}>
             <option value="">— เลือกจุดกองหมอน —</option>
             {points.map((p) => <option key={p.name} value={p.name}>{p.name} · ใช้ได้ {p.avail} ต้น ({p.piles} กอง)</option>)}
           </select>
           {points.length === 0 && <p className="mt-1 text-sm text-orange-600">ไม่มีจุดกองที่มีเสาคงเหลือในพื้นที่นี้</p>}
         </div>
         <div>
-          <label className="label">2) ติ๊กเลือกกองเสา <span className="text-slate-400">(ติ๊กตั้งแต่ 2 กองขึ้นไปได้ · กองที่เสาหมดแล้วจะไม่แสดง)</span></label>
+          <label className="label">2) ขนาดเสา <span className="text-slate-400">(ไม่ติ๊ก = ทุกขนาด · เลือกก่อน เพื่อกรองกองด้านล่าง)</span></label>
+          <div className="flex flex-wrap gap-2">
+            {sizesOfPoint.map((z) => (
+              <label key={z.id} className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 ${sizeIds.includes(z.id) ? "border-brand bg-brand-light font-semibold" : "border-slate-200"}`}>
+                <input type="checkbox" className="h-4 w-4 accent-teal-700" checked={sizeIds.includes(z.id)} onChange={() => tick(sizeIds, setSizeIds, z.id)} />
+                {z.name} <span className="text-xs font-normal text-slate-500">· {z.avail} ต้น</span>
+              </label>
+            ))}
+            {pointName && sizesOfPoint.length === 0 && <p className="text-sm text-orange-600">จุดนี้ไม่มีเสาคงเหลือ</p>}
+          </div>
+        </div>
+
+        <div>
+          <label className="label">3) ติ๊กเลือกกองเสา <span className="text-slate-400">(ติ๊กตั้งแต่ 2 กองขึ้นไปได้ · แสดงเฉพาะกองที่มีเสาตามขนาดที่เลือก)</span></label>
           {!pointName ? <p className="rounded-xl bg-slate-50 p-3 text-sm text-slate-500">เลือกจุดกองหมอนก่อน</p> : (
             <div className="grid gap-2 sm:grid-cols-2">
               {pilesOfPoint.map((s) => {
@@ -305,7 +325,7 @@ export default function Withdraw() {
                     <input type="checkbox" className="h-5 w-5 accent-teal-700" checked={on} onChange={() => tick(siteIds, setSiteIds, s.id)} />
                     <span className="flex-1">
                       <span className="font-semibold">{pileName(s)}</span>
-                      <span className="block text-xs text-slate-500">{(pileSizes.get(s.id) || []).map((z) => `${z.name}: ${z.avail}`).join(" · ")}</span>
+                      <span className="block text-xs text-slate-500">{(pileSizes.get(s.id) || []).filter((z) => sizeIds.length === 0 || sizeIds.includes(z.id)).map((z) => `${z.name}: ${z.avail}`).join(" · ")}</span>
                       {sp.length > 0 && <span className="mt-1 flex flex-wrap gap-1">{sp.map(([k, n]) => <span key={k} className={`rounded-full px-2 py-0.5 text-xs font-semibold ${kindOf(k).cls}`}>⚠️ {kindOf(k).label} {n} ต้น</span>)}</span>}
                     </span>
                     <span className="text-right"><b className="text-xl text-emerald-600">{availOf(s.id)}</b><span className="block text-[10px] text-slate-400">ใช้ได้ (ต้น)</span></span>
@@ -322,18 +342,6 @@ export default function Withdraw() {
             </div>
           )}
         </div>
-        <div>
-          <label className="label">3) ขนาดเสา <span className="text-slate-400">(ไม่ติ๊ก = ทุกขนาด)</span></label>
-          <div className="flex flex-wrap gap-2">
-            {sizes.map((z) => (
-              <label key={z.id} className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 ${sizeIds.includes(z.id) ? "border-brand bg-brand-light font-semibold" : "border-slate-200"}`}>
-                <input type="checkbox" className="h-4 w-4 accent-teal-700" checked={sizeIds.includes(z.id)} onChange={() => tick(sizeIds, setSizeIds, z.id)} />
-                {z.name}
-              </label>
-            ))}
-          </div>
-        </div>
-
         <div className="flex flex-wrap items-end gap-2 rounded-xl bg-slate-50 p-3">
           <div>
             <label className="label">จำนวนเสาที่เบิก (ต้น)</label>

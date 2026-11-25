@@ -84,12 +84,9 @@ export default async function Summary({ searchParams }: { searchParams: { kind?:
               <h3 className="mb-3 font-semibold">ยอดตามขนาดเสา</h3>
               <div className="space-y-3">
                 {bySize.map((z) => (
-                  <div key={z.id}>
-                    <div className="mb-1 flex justify-between text-sm">
-                      <span className="font-medium">{z.name}</span>
-                      <span><b className="text-emerald-600">{z.avail}</b> / {z.total} ต้น</span>
-                    </div>
-                    <div className="h-3 overflow-hidden rounded-full bg-slate-100"><div className="h-full bg-emerald-500" style={{ width: z.total ? `${(z.avail / z.total) * 100}%` : "0%" }} /></div>
+                  <div key={z.id} className="flex items-baseline justify-between border-b border-slate-100 pb-2 last:border-0 last:pb-0">
+                    <span className="font-medium">{z.name}</span>
+                    <span><b className={`text-xl ${z.avail > 0 ? "text-emerald-600" : "text-slate-300"}`}>{z.avail.toLocaleString()}</b> <span className="text-sm text-slate-500">ต้น</span></span>
                   </div>
                 ))}
               </div>
