@@ -26,15 +26,19 @@ export default async function Home() {
   let wq: any = await s.from("withdrawals").select("id,pole_free,area_id,approved_at").is("done_at", null);
   if (wq.error) wq = await s.from("withdrawals").select("id").is("done_at", null); // ยังไม่ได้รัน migration 012/013
   const openW = ((wq.data || []) as any[]).filter((w) => w.approved_at !== null);
+  // ใบเบิกที่รออนุมัติ (ยังไม่กดอนุมัติ)
+  const pq: any = await s.from("withdrawals").select("id,pole_free,area_id").is("approved_at", null);
+  const pendW = (pq.error ? [] : (pq.data || [])) as any[];
   const wSites = new Map<string, Set<string>>();
-  for (let i = 0; i < openW.length; i += 60) {
-    const { data } = await s.from("poles").select("withdrawal_id,site_id").in("withdrawal_id", openW.slice(i, i + 60).map((w) => w.id)).limit(5000);
+  const allW = [...openW, ...pendW];
+  for (let i = 0; i < allW.length; i += 60) {
+    const { data } = await s.from("poles").select("withdrawal_id,site_id").in("withdrawal_id", allW.slice(i, i + 60).map((w) => w.id)).limit(5000);
     for (const r of (data || []) as any[]) { if (!wSites.has(r.withdrawal_id)) wSites.set(r.withdrawal_id, new Set()); wSites.get(r.withdrawal_id)!.add(r.site_id); }
   }
-  const openCount = (siteList: any[], areaKey: string) => {
-    if (areaKey === "all") return openW.length;
+  const openCount = (siteList: any[], areaKey: string, src: any[] = openW) => {
+    if (areaKey === "all") return src.length;
     const ids = new Set(siteList.map((x) => x.id));
-    return openW.filter((w) => {
+    return src.filter((w) => {
       const ss = wSites.get(w.id);
       if (ss && Array.from(ss).some((x) => ids.has(x))) return true;
       return !!w.pole_free && (areaKey === "none" ? !w.area_id : w.area_id === areaKey);
@@ -43,8 +47,10 @@ export default async function Home() {
   const stock = (stockQ.data || []) as any[];
   const sum = (siteIds: Set<string>, k: "total" | "available") => stock.filter((r) => siteIds.has(r.site_id)).reduce((a, r) => a + Number(r[k]), 0);
 
+  const noArea = sites.filter((x) => !x.area_id);
   const card = (key: string, id: string, title: string, siteList: any[], emoji = "📍") => {
     const open = openCount(siteList, id);
+    const pend = openCount(siteList, id, pendW);
     const ids = new Set(siteList.map((x) => x.id));
     const liveIds = new Set<string>();
     for (const r of stock) if (ids.has(r.site_id) && Number(r.available) > 0) liveIds.add(r.site_id);
@@ -87,8 +93,13 @@ export default async function Home() {
             </ul>
           )}
         </div>
+        {pend > 0 && (
+          <div className="mt-3 flex w-fit items-center gap-1.5 rounded-full bg-red-600 px-3 py-1 text-sm font-semibold text-white">
+            ⏳ {pend} ใบเบิกรออนุมัติ
+          </div>
+        )}
         {open > 0 && (
-          <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800">
+          <div className="mt-2 flex w-fit items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800">
             ⚠️ {open} งานยังไม่ใส่เลขใบตัดงาน
           </div>
         )}
@@ -96,14 +107,30 @@ export default async function Home() {
     );
   };
 
-  const noArea = sites.filter((x) => !x.area_id);
-
   return (
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold">ระบบเบิกเสา</h1>
         <p className="text-sm text-slate-500">เลือกพื้นที่เพื่อเข้าใช้งาน</p>
       </div>
+
+      {pendW.length > 0 && (
+        <div className="rounded-2xl border-2 border-red-300 bg-red-50 p-4">
+          <div className="text-lg font-bold text-red-700">⏳ มี {pendW.length} ใบเบิกรออนุมัติ</div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {[...(areasQ.data || []).map((a: any) => ({ id: a.id as string, name: a.name as string, list: sites.filter((x) => x.area_id === a.id) })),
+              ...(noArea.length > 0 ? [{ id: "none", name: "ยังไม่ระบุพื้นที่", list: noArea }] : [])]
+              .map((a) => ({ ...a, n: openCount(a.list, a.id, pendW) }))
+              .filter((a) => a.n > 0)
+              .map((a) => (
+                <a key={a.id} href={`/api/area/select?id=${a.id}&to=/approvals`} className="rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-red-700">
+                  {a.name} · {a.n} ใบ →
+                </a>
+              ))}
+            <a href="/api/area/select?id=all&to=/approvals" className="rounded-full border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100">ดูทุกพื้นที่</a>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2">
         {(areasQ.data || []).map((a: any) => card(a.id, a.id, a.name, sites.filter((x) => x.area_id === a.id)))}
