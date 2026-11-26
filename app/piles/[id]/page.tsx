@@ -4,6 +4,7 @@ import { pilePhotos } from "@/lib/pile";
 import { withdrawalColors } from "@/lib/wcolor";
 import DeletePileButton from "@/components/DeletePileButton";
 import PoleEditCell from "@/components/PoleEditCell";
+import AddTierForm from "@/components/AddTierForm";
 import PilePhotosView from "@/components/PilePhotosView";
 
 export const dynamic = "force-dynamic";
@@ -138,6 +139,12 @@ export default async function Pile({ params }: { params: { id: string } }) {
           ))}
           {poles.length === 0 && <p className="text-slate-500">ยังไม่มีเสาในกองนี้ — <Link href="/poles/new" className="text-brand underline">เพิ่มเสา</Link></p>}
         </div>
+        {poles.length > 0 && (() => {
+          const sz = new Map<string, string>();
+          for (const p of poles) if (p.size_id && p.pole_sizes?.name) sz.set(p.size_id, p.pole_sizes.name);
+          const maxTier = Math.max(0, ...poles.map((p) => Number(p.tier) || 0));
+          return <AddTierForm siteId={params.id} sizes={Array.from(sz.entries()).map(([id, name]) => ({ id, name }))} maxTier={maxTier} />;
+        })()}
       </section>
 
       <section className="card">
