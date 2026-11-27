@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/supabase";
 import { areaSiteIds, scopedSites } from "@/lib/area";
 import { KINDS, kindOf } from "@/lib/kinds";
+import InventoryButton from "@/components/InventoryButton";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -51,7 +52,10 @@ export default async function Summary({ searchParams }: { searchParams: { kind?:
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">สรุปภาพรวม <span className="text-base font-normal text-slate-500">(แยกตามประเภทเสา)</span></h1>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-2xl font-bold">สรุปภาพรวม <span className="text-base font-normal text-slate-500">(แยกตามประเภทเสา)</span></h1>
+        <InventoryButton />
+      </div>
 
       {/* เลือกประเภท: แต่ละประเภทแสดงยอดของตัวเอง ไม่รวมกัน */}
       <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
