@@ -105,7 +105,7 @@ async function build(sg: Signers) {
   const border = { top: thin, left: thin, bottom: thin, right: thin };
   const font = (b = false) => ({ name: FONT, size: 14, bold: b });
   const PHOTO_ROWS = 15, ROW_H = 21, PHOTO_W_MAX = 560, PHOTO_H_MAX = PHOTO_ROWS * ROW_H * 4 / 3 - 8;
-  const D_PX = 98.43 * 7 + 5;
+  const DSUB = 24.6, DSUB_PX = Math.floor(DSUB * 7 + 5), D_PX = DSUB_PX * 4; // คอลัมน์ D แบ่งเป็น 4 ช่องย่อย (รวมเซลล์ในตาราง) เพื่อจัดช่องลงชื่อให้ชิดกัน
 
   for (const sh of sheets) {
     const ws = wb.addWorksheet(sh.name, {
@@ -118,13 +118,15 @@ async function build(sg: Signers) {
         oddHeader: `&C${HEADER_LINES}\nรายละเอียดประกอบการตรวจนับพัสดุประเภท  ผลิตภัณฑ์คอนกรีต\nสถานที่จัดเก็บ ${sh.place}&R&P/&N`,
       },
     });
-    const widths = [4.43, 14.14, 14.43, 98.43, 10.71, 15.71, 10.71, 37.57];
+    const widths = [4.43, 14.14, 14.43, DSUB, DSUB, DSUB, DSUB, 10.71, 15.71, 10.71, 37.57];
     widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
 
-    const head = ws.addRow(["ที่", "รหัสพัสดุ", "รายการ", "หมายเลข / No.เสา", "แบทช์", "ยี่ห้อผลิตภัณฑ์", "จำนวน", "ข้อตรวจพบการจัดเก็บพัสดุ"]);
+    const head = ws.addRow(["ที่", "รหัสพัสดุ", "รายการ", "หมายเลข / No.เสา", null, null, null, "แบทช์", "ยี่ห้อผลิตภัณฑ์", "จำนวน", "ข้อตรวจพบการจัดเก็บพัสดุ"]);
+    ws.mergeCells(head.number, 4, head.number, 7);
     head.height = 24;
-    head.eachCell((c: any) => { c.font = font(true); c.alignment = { horizontal: "center", vertical: "middle", wrapText: true }; c.border = border; });
+    head.eachCell({ includeEmpty: true }, (c: any) => { c.font = font(true); c.alignment = { horizontal: "center", vertical: "middle", wrapText: true }; c.border = border; });
 
+    const NC = 11; // จำนวนคอลัมน์ทั้งหมด
     const cell = (r: ExcelJS.Row, col: number, v: any, align: "center" | "left" = "center") => {
       const c = r.getCell(col); c.value = v; c.font = font(); c.border = border;
       c.alignment = { horizontal: align, vertical: "middle", wrapText: true };
@@ -135,22 +137,26 @@ async function build(sg: Signers) {
         const r = ws.addRow([]);
         const lines = Math.max(1, Math.ceil(row.nos.length / 78));
         r.height = ROW_H * lines + (ri === 0 && b.item.length > 20 ? ROW_H : 0);
+        for (let c = 1; c <= NC; c++) cell(r, c, null);
+        ws.mergeCells(r.number, 4, r.number, 7);
         cell(r, 1, ri === 0 ? b.seq : null); cell(r, 2, ri === 0 ? b.code : null);
         cell(r, 3, ri === 0 ? b.item : null, "left"); cell(r, 4, row.nos);
-        cell(r, 5, b.batch); cell(r, 6, null); cell(r, 7, row.count);
-        cell(r, 8, ri === 0 ? b.point : null);
+        cell(r, 8, b.batch); cell(r, 10, row.count);
+        cell(r, 11, ri === 0 ? b.point : null);
         sub += row.count;
       });
       const tot = ws.addRow([]); tot.height = ROW_H;
-      for (let c = 1; c <= 8; c++) cell(tot, c, null);
-      tot.getCell(6).value = "รวม"; tot.getCell(6).font = font(true);
-      tot.getCell(7).value = sub; tot.getCell(7).font = font(true);
+      for (let c = 1; c <= NC; c++) cell(tot, c, null);
+      ws.mergeCells(tot.number, 4, tot.number, 7);
+      tot.getCell(9).value = "รวม"; tot.getCell(9).font = font(true);
+      tot.getCell(10).value = sub; tot.getCell(10).font = font(true);
       if (bi === sh.blocks.length - 1) {
         const all = ws.addRow([]); all.height = ROW_H;
-        for (let c = 1; c <= 8; c++) cell(all, c, null);
-        const e = all.getCell(5); e.value = "รวมทั้งหมด"; e.font = font(true); e.alignment = { horizontal: "center", vertical: "middle", shrinkToFit: true };
-        ws.mergeCells(all.number, 6, all.number, 8);
-        const t = all.getCell(6);
+        for (let c = 1; c <= NC; c++) cell(all, c, null);
+        ws.mergeCells(all.number, 4, all.number, 7);
+        const e = all.getCell(8); e.value = "รวมทั้งหมด"; e.font = font(true); e.alignment = { horizontal: "center", vertical: "middle", shrinkToFit: true };
+        ws.mergeCells(all.number, 9, all.number, 11);
+        const t = all.getCell(9);
         t.value = sh.blocks.length > 1 ? `${sh.blocks.map((x: InvBlock) => x.total).join(" + ")} = ${sh.total}` : String(sh.total);
         t.font = font(true); t.alignment = { horizontal: "left", vertical: "middle", wrapText: true, indent: 1 };
         all.height = ROW_H * Math.max(1, Math.ceil(String(t.value).length / 55));
@@ -161,7 +167,8 @@ async function build(sg: Signers) {
       // แถวว่างพร้อมเส้นตาราง (เหมือนต้นฉบับ) สำหรับวางรูป
       for (let i = 0; i < PHOTO_ROWS; i++) {
         const pr = ws.addRow([]); pr.height = ROW_H;
-        for (let c = 1; c <= 8; c++) pr.getCell(c).border = border;
+        for (let c = 1; c <= NC; c++) pr.getCell(c).border = border;
+        ws.mergeCells(pr.number, 4, pr.number, 7);
       }
       const im = imgs.get(b.siteId);
       if (im) {
@@ -170,13 +177,13 @@ async function build(sg: Signers) {
         const id = wb.addImage({ buffer: im.buf as any, extension: im.ext });
         const areaH = PHOTO_ROWS * ROW_H * 4 / 3;
         ws.addImage(id, {
-          tl: { nativeCol: 3, nativeColOff: Math.round(Math.max(0, (D_PX - w) / 2) * 9525), nativeRow: firstPhotoRow - 1, nativeRowOff: Math.round(Math.max(0, (areaH - h) / 2) * 9525) },
+          tl: { nativeCol: 3 + Math.floor(Math.max(0, (D_PX - w) / 2) / DSUB_PX), nativeColOff: Math.round((Math.max(0, (D_PX - w) / 2) % DSUB_PX) * 9525), nativeRow: firstPhotoRow - 1, nativeRowOff: Math.round(Math.max(0, (areaH - h) / 2) * 9525) },
           ext: { width: w, height: h }, editAs: "oneCell",
         } as any);
       }
 
       // ช่องลงชื่อ: แต่ละคนอยู่ในช่องรวมเซลล์ของตัวเอง จัดกึ่งกลาง → ชื่อ/ตำแหน่งตรงกับเส้นลงชื่อเสมอ
-      // ช่วงคอลัมน์: ซ้าย A:C · กลาง D · ขวากลาง E:G · ขวา H
+      // ช่วงคอลัมน์: A:C · D1:D2 · D3:D4 (กรรมการ 3 คนชิดกัน) · ขวา F:H
       const place = (r: ExcelJS.Row, c1: number, c2: number, text: string) => {
         if (c2 > c1) ws.mergeCells(r.number, c1, r.number, c2);
         const c = r.getCell(c1); c.value = text || null; c.font = { name: FONT, size: 14 };
@@ -184,13 +191,13 @@ async function build(sg: Signers) {
       };
       const lineOf = (role: string) => `ลงชื่อ ................................ ${role}`;
       // ความสูงแถว: บรรทัดเดียวถ้าข้อความพอดีช่อง (จำกัดตัวอักษรตามความกว้างช่อง) ไม่งั้นขึ้นบรรทัดที่ 2
-      const LIM = [30, 80, 40, 38];
+      const LIM = [30, 46, 46, 55];
       const heightFor = (cols: number[], ...t: string[]) => (t.some((x, k) => x.length > LIM[cols[k] ?? 0]) ? 36 : 19);
       const trio = (cols: [number, number][], texts: string[], h = 19) => {
         const r = ws.addRow([]); r.height = h;
         cols.forEach((c, k) => place(r, c[0], c[1], texts[k] || ""));
       };
-      const L: [number, number] = [1, 3], M: [number, number] = [4, 4], R1: [number, number] = [5, 7], R2: [number, number] = [8, 8];
+      const L: [number, number] = [1, 3], M: [number, number] = [4, 5], R1: [number, number] = [6, 7], R2: [number, number] = [9, 11];
       ws.addRow([]).height = 18; // เว้นช่องไฟระหว่างตารางกับช่องลงชื่อ
       // แถวบน: ประธาน (ซ้าย) · ผู้ควบคุมพัสดุ (ขวา)
       trio([L, R2], [lineOf("ประธาน"), lineOf("ผู้ควบคุมพัสดุ")]);
