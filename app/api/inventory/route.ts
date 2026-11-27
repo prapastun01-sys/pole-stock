@@ -191,11 +191,12 @@ async function build(sg: Signers) {
         cols.forEach((c, k) => place(r, c[0], c[1], texts[k] || ""));
       };
       const L: [number, number] = [1, 3], M: [number, number] = [4, 4], R1: [number, number] = [5, 7], R2: [number, number] = [8, 8];
+      ws.addRow([]).height = 18; // เว้นช่องไฟระหว่างตารางกับช่องลงชื่อ
       // แถวบน: ประธาน (ซ้าย) · ผู้ควบคุมพัสดุ (ขวา)
       trio([L, R2], [lineOf("ประธาน"), lineOf("ผู้ควบคุมพัสดุ")]);
       trio([L, R2], [`( ${sg.chair.name} )`, `( ${sg.controller.name} )`], heightFor([0, 3], sg.chair.name, sg.controller.name));
       trio([L, R2], [sg.chair.pos, sg.controller.pos], heightFor([0, 3], sg.chair.pos, sg.controller.pos));
-      ws.addRow([]).height = 6;
+      ws.addRow([]).height = 10;
       // แถวล่าง: กรรมการ 3 คน · หัวหน้าแผนก (ขวา)
       const m = sg.members;
       trio([L, M, R1, R2], [lineOf("กรรมการ"), lineOf("กรรมการ"), lineOf("กรรมการ"), lineOf("หัวหน้าแผนก")]);
