@@ -179,28 +179,30 @@ async function build(sg: Signers) {
       // ช่วงคอลัมน์: ซ้าย A:C · กลาง D · ขวากลาง E:G · ขวา H
       const place = (r: ExcelJS.Row, c1: number, c2: number, text: string) => {
         if (c2 > c1) ws.mergeCells(r.number, c1, r.number, c2);
-        const c = r.getCell(c1); c.value = text || null; c.font = { name: FONT, size: 16 };
+        const c = r.getCell(c1); c.value = text || null; c.font = { name: FONT, size: 14 };
         c.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
       };
       const lineOf = (role: string) => `ลงชื่อ ................................ ${role}`;
-      const heightFor = (...t: string[]) => (t.some((x) => x.length > 26) ? 44 : 23.25);
-      const trio = (cols: [number, number][], texts: string[], h = 23.25) => {
+      // ความสูงแถว: บรรทัดเดียวถ้าข้อความพอดีช่อง (จำกัดตัวอักษรตามความกว้างช่อง) ไม่งั้นขึ้นบรรทัดที่ 2
+      const LIM = [30, 80, 40, 38];
+      const heightFor = (cols: number[], ...t: string[]) => (t.some((x, k) => x.length > LIM[cols[k] ?? 0]) ? 36 : 19);
+      const trio = (cols: [number, number][], texts: string[], h = 19) => {
         const r = ws.addRow([]); r.height = h;
         cols.forEach((c, k) => place(r, c[0], c[1], texts[k] || ""));
       };
       const L: [number, number] = [1, 3], M: [number, number] = [4, 4], R1: [number, number] = [5, 7], R2: [number, number] = [8, 8];
       // แถวบน: ประธาน (ซ้าย) · ผู้ควบคุมพัสดุ (ขวา)
       trio([L, R2], [lineOf("ประธาน"), lineOf("ผู้ควบคุมพัสดุ")]);
-      trio([L, R2], [`( ${sg.chair.name} )`, `( ${sg.controller.name} )`], heightFor(sg.chair.name, sg.controller.name));
-      trio([L, R2], [sg.chair.pos, sg.controller.pos], heightFor(sg.chair.pos, sg.controller.pos));
-      ws.addRow([]).height = 10;
+      trio([L, R2], [`( ${sg.chair.name} )`, `( ${sg.controller.name} )`], heightFor([0, 3], sg.chair.name, sg.controller.name));
+      trio([L, R2], [sg.chair.pos, sg.controller.pos], heightFor([0, 3], sg.chair.pos, sg.controller.pos));
+      ws.addRow([]).height = 6;
       // แถวล่าง: กรรมการ 3 คน · หัวหน้าแผนก (ขวา)
       const m = sg.members;
       trio([L, M, R1, R2], [lineOf("กรรมการ"), lineOf("กรรมการ"), lineOf("กรรมการ"), lineOf("หัวหน้าแผนก")]);
       const names = [`( ${m[0].name} )`, `( ${m[1].name} )`, `( ${m[2].name} )`, `( ${sg.head.name} )`];
-      trio([L, M, R1, R2], names, heightFor(...names));
+      trio([L, M, R1, R2], names, heightFor([0, 1, 2, 3], ...names));
       const poss = [m[0].pos, m[1].pos, m[2].pos, sg.head.pos];
-      trio([L, M, R1, R2], poss, heightFor(...poss));
+      trio([L, M, R1, R2], poss, heightFor([0, 1, 2, 3], ...poss));
       if (bi < sh.blocks.length - 1) ws.getRow(ws.rowCount).addPageBreak();
     });
   }
