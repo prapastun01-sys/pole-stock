@@ -158,13 +158,21 @@ async function build(sg: Signers) {
 
       // พื้นที่รูป
       const firstPhotoRow = ws.rowCount + 1;
-      for (let i = 0; i < PHOTO_ROWS; i++) ws.addRow([]).height = ROW_H;
+      // แถวว่างพร้อมเส้นตาราง (เหมือนต้นฉบับ) สำหรับวางรูป
+      for (let i = 0; i < PHOTO_ROWS; i++) {
+        const pr = ws.addRow([]); pr.height = ROW_H;
+        for (let c = 1; c <= 8; c++) pr.getCell(c).border = border;
+      }
       const im = imgs.get(b.siteId);
       if (im) {
         const k = Math.min(PHOTO_W_MAX / im.w, PHOTO_H_MAX / im.h, 1.6);
         const w = Math.round(im.w * k), h = Math.round(im.h * k);
         const id = wb.addImage({ buffer: im.buf as any, extension: im.ext });
-        ws.addImage(id, { tl: { col: 3 + Math.max(0, (D_PX - w) / 2 / D_PX), row: firstPhotoRow - 1 + 0.2 }, ext: { width: w, height: h } });
+        const areaH = PHOTO_ROWS * ROW_H * 4 / 3;
+        ws.addImage(id, {
+          tl: { nativeCol: 3, nativeColOff: Math.round(Math.max(0, (D_PX - w) / 2) * 9525), nativeRow: firstPhotoRow - 1, nativeRowOff: Math.round(Math.max(0, (areaH - h) / 2) * 9525) },
+          ext: { width: w, height: h }, editAs: "oneCell",
+        } as any);
       }
 
       // ช่องลงชื่อ: จัดเหมือนไฟล์ต้นฉบับ (ซ้ายคอลัมน์ A, ขวาคอลัมน์ F, ตัวอักษร 16)
