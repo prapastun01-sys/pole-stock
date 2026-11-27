@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/supabase";
 import { scopedSites } from "@/lib/area";
 import { pilePhotos } from "@/lib/pile";
-import { buildInventory, InvBlock, InvSheet, InvRow } from "@/lib/inventory";
+import { buildInventory, cleanSigners, DEFAULT_SIGNERS, Signers, Person, InvBlock, InvSheet, InvRow } from "@/lib/inventory";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -51,7 +51,13 @@ async function mapLimit<T, R>(items: T[], n: number, fn: (x: T) => Promise<R>): 
   return out;
 }
 
-export async function GET() {
+export async function GET() { return build(DEFAULT_SIGNERS); }
+export async function POST(req: Request) {
+  const b = await req.json().catch(() => ({}));
+  return build(cleanSigners(b?.signers));
+}
+
+async function build(sg: Signers) {
   const s = db();
   const { data: sites, error: e1 } = await scopedSites("id,name,zone,pile").order("name");
   if (e1) return NextResponse.json({ error: e1.message }, { status: 500 });
@@ -123,11 +129,6 @@ export async function GET() {
       const c = r.getCell(col); c.value = v; c.font = font(); c.border = border;
       c.alignment = { horizontal: align, vertical: "middle", wrapText: true };
     };
-    const sig = (text: string, h = ROW_H) => {
-      const r = ws.addRow([text]); ws.mergeCells(r.number, 1, r.number, 8);
-      r.height = h; const c = r.getCell(1); c.font = font(); c.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-    };
-
     sh.blocks.forEach((b: InvBlock, bi: number) => {
       let sub = 0;
       b.rows.forEach((row: InvRow, ri: number) => {
@@ -147,8 +148,12 @@ export async function GET() {
       if (bi === sh.blocks.length - 1) {
         const all = ws.addRow([]); all.height = ROW_H;
         for (let c = 1; c <= 8; c++) cell(all, c, null);
-        all.getCell(5).value = "รวมทั้งหมด"; all.getCell(5).font = font(true);
-        all.getCell(7).value = sh.total; all.getCell(7).font = font(true);
+        const e = all.getCell(5); e.value = "รวมทั้งหมด"; e.font = font(true); e.alignment = { horizontal: "center", vertical: "middle", shrinkToFit: true };
+        ws.mergeCells(all.number, 6, all.number, 8);
+        const t = all.getCell(6);
+        t.value = sh.blocks.length > 1 ? `${sh.blocks.map((x: InvBlock) => x.total).join(" + ")} = ${sh.total}` : String(sh.total);
+        t.font = font(true); t.alignment = { horizontal: "left", vertical: "middle", wrapText: true, indent: 1 };
+        all.height = ROW_H * Math.max(1, Math.ceil(String(t.value).length / 55));
       }
 
       // พื้นที่รูป
@@ -162,11 +167,20 @@ export async function GET() {
         ws.addImage(id, { tl: { col: 3 + Math.max(0, (D_PX - w) / 2 / D_PX), row: firstPhotoRow - 1 + 0.2 }, ext: { width: w, height: h } });
       }
 
-      sig("ลงชื่อ ................................................ ประธาน");
-      sig("         ( นายไชย์พิชิต โป๊ะประนม )  ชก.บษ.(ฉ1)");
-      sig("", 10);
-      sig("ลงชื่อ ................................................ กรรมการ                ลงชื่อ ................................................ กรรมการ                   ลงชื่อ ................................................ กรรมการ");
-      sig("          ( นางมาธินีย์ แสนนาม ) รจก.กฟจ.สน.                       ( นายณรงฤทธิ์ นันทพันธ์ ) วศก.8 กฟจ.สน..                 ( นางจิฬวตี เงาะปก ) ชก.บพ.(ฉ1)");
+      // ช่องลงชื่อ: จัดเหมือนไฟล์ต้นฉบับ (ซ้ายคอลัมน์ A, ขวาคอลัมน์ F, ตัวอักษร 16)
+      const sp = (n: number) => " ".repeat(n);
+      const nm = (p: { name: string; pos: string }) => `( ${p.name} ) ${p.pos}`;
+      const signRow = (a: string, f: string, h = 23.25) => {
+        const r = ws.addRow([]); r.height = h;
+        const ca = r.getCell(1); ca.value = a || null; ca.font = { name: FONT, size: 16 }; ca.alignment = { horizontal: "left", vertical: "middle", wrapText: false };
+        const cf = r.getCell(6); cf.value = f || null; cf.font = { name: FONT, size: 16 }; cf.alignment = { horizontal: "left", vertical: "middle", wrapText: false };
+      };
+      const line = "ลงชื่อ ................................................ ";
+      signRow(line + "ประธาน", "ลงชื่อ..........................ผู้ควบคุมพัสดุ");
+      signRow(sp(9) + nm(sg.chair), nm(sg.controller));
+      signRow("", "");
+      signRow(sg.members.map(() => line + "กรรมการ").join(sp(16)), "ลงชื่อ..........................หัวหน้าแผนก");
+      signRow(sg.members.map((m: Person) => sp(10) + nm(m)).join(sp(23)), nm(sg.head));
       if (bi < sh.blocks.length - 1) ws.getRow(ws.rowCount).addPageBreak();
     });
   }

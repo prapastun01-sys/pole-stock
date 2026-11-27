@@ -102,3 +102,28 @@ export function buildInventory(sites: InvSite[], sizes: InvSize[], poles: InvPol
   for (const sh of sheets) { let n = sh.name, i = 2; while (used.has(n.toLowerCase())) n = sh.name.slice(0, 28) + " " + i++; sh.name = n; used.add(n.toLowerCase()); }
   return sheets;
 }
+
+// รายชื่อคณะกรรมการตรวจนับ (แก้ไขได้ก่อนส่งออก)
+export type Person = { name: string; pos: string };
+export type Signers = { chair: Person; members: Person[]; controller: Person; head: Person };
+export const DEFAULT_SIGNERS: Signers = {
+  chair: { name: "นายไชย์พิชิต โป๊ะประนม", pos: "ชก.บษ.(ฉ1)" },
+  members: [
+    { name: "นางมาธินีย์ แสนนาม", pos: "รจก.กฟจ.สน." },
+    { name: "นายณรงฤทธิ์ นันทพันธ์", pos: "วศก.8 กฟจ.สน.." },
+    { name: "นางจิฬวตี เงาะปก", pos: "ชก.บพ.(ฉ1)" },
+  ],
+  controller: { name: "นางสาวนันทพร คำภู", pos: "พพด.3 ผคพ.กฟจ.นพ." },
+  head: { name: "นางสิทธิพร รุ่งมณี", pos: "รจก.รักษาการแทน หผ.คพ.กฟจ.นพ." },
+};
+
+const person = (p: any, d: Person): Person => ({ name: String(p?.name ?? d.name).slice(0, 80), pos: String(p?.pos ?? d.pos).slice(0, 80) });
+export function cleanSigners(x: any): Signers {
+  const D = DEFAULT_SIGNERS;
+  return {
+    chair: person(x?.chair, D.chair),
+    members: D.members.map((d, i) => person(x?.members?.[i], d)),
+    controller: person(x?.controller, D.controller),
+    head: person(x?.head, D.head),
+  };
+}
